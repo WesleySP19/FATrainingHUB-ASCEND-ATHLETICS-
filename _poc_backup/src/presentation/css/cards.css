@@ -1,0 +1,272 @@
+/* Container Base */
+.card-container {
+  perspective: 1000px;
+  width: 350px;
+  height: 520px;
+  margin: var(--spacing-lg) auto;
+}
+
+/* O wrapper que vai girar */
+.card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+  cursor: pointer;
+}
+
+/* Efeito de Flip no Hover (ou via classe JS) */
+.card-container:hover .card-inner,
+.card-container:focus-within .card-inner,
+.card-container.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+/* Faces do Card */
+.card-front, .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 
+              inset 0 0 0 2px rgba(250, 204, 21, 0.4);
+}
+
+/* =========================================
+   FRENTE DO CARD (Inspirado na Imagem 1)
+   ========================================= */
+.card-front {
+  background: linear-gradient(145deg, #1a1a1a 0%, #000000 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Efeito Holográfico Global (Frente) */
+.card-front::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(125deg, 
+      transparent 20%, 
+      rgba(255, 255, 255, 0.1) 40%, 
+      rgba(250, 204, 21, 0.2) 50%, 
+      transparent 60%);
+  background-size: 200% 200%;
+  animation: holoSweep 5s infinite linear;
+  pointer-events: none;
+  mix-blend-mode: color-dodge;
+  z-index: 10;
+}
+
+@keyframes holoSweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.front-header {
+  padding: 15px;
+  text-align: center;
+  border-bottom: 2px solid rgba(250, 204, 21, 0.3);
+  background: linear-gradient(to right, transparent, rgba(250, 204, 21, 0.1), transparent);
+}
+
+.front-title {
+  font-family: var(--font-display);
+  color: var(--primary-color);
+  font-size: 2.2rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.front-body {
+  position: relative;
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-image: radial-gradient(circle at center, rgba(250,204,21,0.15) 0%, transparent 70%);
+}
+
+.side-text {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: left center;
+  font-family: var(--font-base);
+  font-size: 0.65rem;
+  letter-spacing: 4px;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.player-image-placeholder {
+  width: 180px;
+  height: 180px;
+  border-radius: 10px;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23facce15"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>') center/cover;
+  border: 3px solid var(--primary-color);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 2;
+  background-color: #333;
+}
+
+.front-footer {
+  position: relative;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+}
+
+.nameplate {
+  background: var(--primary-color);
+  color: #000;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  padding: 5px 15px;
+  transform: skewX(-15deg);
+  border: 2px solid #fff;
+  box-shadow: 0 4px 10px rgba(250,204,21,0.4);
+}
+
+.nameplate span {
+  display: block;
+  transform: skewX(15deg); /* Desfaz o skew para o texto */
+}
+
+.team-logo {
+  width: 60px;
+  height: 60px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: var(--font-display);
+  color: #fff;
+  font-size: 2rem;
+  border: 2px solid var(--primary-color);
+}
+
+.ovr-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  color: #fff;
+  text-shadow: 0 0 15px var(--primary-color), 2px 2px 0px #000;
+  z-index: 5;
+}
+
+
+/* =========================================
+   VERSO DO CARD (Inspirado na Imagem 2)
+   Adaptado para mostrar o Treino do Coach
+   ========================================= */
+.card-back {
+  background: linear-gradient(180deg, #450a0a 0%, #1a0505 100%);
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #dc2626; /* Borda vermelha forte */
+}
+
+/* Efeito de iluminação dramática no fundo (linhas verticais da img2) */
+.card-back::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 40px,
+    rgba(250, 204, 21, 0.05) 40px,
+    rgba(250, 204, 21, 0.05) 80px
+  );
+  pointer-events: none;
+}
+
+.back-header {
+  text-align: center;
+  padding: 20px 10px;
+  background: rgba(0,0,0,0.5);
+  border-bottom: 3px solid var(--primary-color);
+}
+
+.back-subtitle {
+  font-family: var(--font-base);
+  color: #fff;
+  font-size: 0.8rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.back-title {
+  font-family: var(--font-display);
+  color: var(--primary-color);
+  font-size: 2.5rem;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0px #000, 0 0 20px rgba(250,204,21,0.5);
+}
+
+/* Área do Treino (Autonomia do Coach) */
+.workout-stats {
+  flex-grow: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  position: relative;
+  z-index: 2;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255,255,255,0.05);
+  padding: 10px 15px;
+  border-radius: 8px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.stat-name {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--primary-color);
+}
+
+.back-footer {
+  padding: 15px;
+  text-align: center;
+  background: #000;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-family: var(--font-display);
+  color: #fff;
+  letter-spacing: 2px;
+}
+
+/* Tier Specific Styles */
+.tier-elite .card-front {
+  box-shadow: inset 0 0 0 3px var(--primary-color);
+}

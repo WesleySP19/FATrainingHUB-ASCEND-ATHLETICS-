@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Locker Room - FA Training Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/cards.css">
+</head>
+<body>
+  <nav aria-label="Menu principal">
+    <div class="container" style="padding: var(--spacing-sm) var(--spacing-md); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="color: var(--primary-color); margin:0; font-size: 1.5rem;">FA LOCKER ROOM</h2>
+      <a href="../../../index.html" style="color: var(--text-primary); text-decoration: none; padding: 10px;" aria-label="Sair para o menu principal">&larr; Sair</a>
+    </div>
+  </nav>
+
+  <main class="container" style="text-align: center; padding-top: var(--spacing-lg);">
+    <header style="margin-bottom: var(--spacing-lg);">
+      <h1>Vestiário Digital</h1>
+      <p style="color: var(--text-secondary);">Acompanhe sua evolução e seu Overall Rating (OVR).</p>
+    </header>
+
+    <div id="cardRenderer" aria-live="polite">
+      <p style="color: var(--text-secondary);">Gerando Card Colecionável...</p>
+    </div>
+
+    <div style="margin-top: 40px;">
+      <a href="athlete-workout.html" class="btn" style="text-decoration: none; padding: 15px 30px;" aria-label="Voltar para a área de Game Day">&larr; Voltar pro Game Day</a>
+    </div>
+  </main>
+
+  <script type="module">
+    import { Athlete } from '../../domain/Athlete.js';
+    import { CreateCollectibleCard } from '../../usecases/CreateCollectibleCard.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const cardRenderer = document.getElementById('cardRenderer');
+      const cachedAthlete = localStorage.getItem('athlete_poc_state');
+      
+      let athlete;
+      if (cachedAthlete) {
+        const parsed = JSON.parse(cachedAthlete);
+        athlete = new Athlete(parsed.id, parsed.name, parsed.position);
+        athlete.personalRecords = parsed.personalRecords;
+        athlete.attendanceCount = parsed.attendanceCount;
+      } else {
+        // Fallback de demonstração
+        athlete = new Athlete("1", "Rafa (Muralha)", "OL");
+        athlete.updatePR("ex-001", 100);
+        athlete.attendanceCount = 10;
+      }
+
+      const generateCardUseCase = new CreateCollectibleCard();
+      
+      try {
+        const cardData = generateCardUseCase.execute(athlete);
+        
+        // Define classe CSS para animar os efeitos visuais baseado na categoria da gamificação
+        let tierClass = "tier-base";
+        if(cardData.cardTier.includes("Elite")) tierClass = "tier-elite";
+        else if(cardData.cardTier.includes("Pro")) tierClass = "tier-pro";
+
+        // Gera as conquistas
+        const badgesHtml = cardData.badges.map(b => `<span class="badge">${b}</span>`).join('');
+
+        // Insere o card na tela com Labels de Acessibilidade
+        cardRenderer.innerHTML = `
+          <div class="card-container" aria-label="Card Colecionável de ${cardData.athleteName}, Overall ${cardData.overall}, Posição ${cardData.position}" tabindex="0">
+            <div class="holographic-card ${tierClass}">
+              <div class="card-header">
+                <div class="card-overall" aria-hidden="true">${cardData.overall}</div>
+                <div class="card-position" aria-hidden="true">${cardData.position}</div>
+              </div>
+              <div class="card-body">
+                <div style="width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.1); margin-bottom: 10px; border: 2px solid var(--primary-color);"></div>
+                <h3 class="card-name" aria-hidden="true">${cardData.athleteName}</h3>
+                <p style="color:var(--text-secondary); margin-bottom:10px;" aria-hidden="true">${cardData.cardTier}</p>
+              </div>
+              <div class="card-badges" aria-label="Conquistas alcançadas">
+                ${badgesHtml}
+              </div>
+            </div>
+          </div>
+        `;
+      } catch(e) {
+        cardRenderer.innerHTML = `<p style="color:var(--accent-red)">Erro ao carregar os dados do atleta.</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

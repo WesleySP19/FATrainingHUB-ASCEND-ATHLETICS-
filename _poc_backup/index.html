@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FA Training Platform</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="src/presentation/css/main.css">
+  <link rel="stylesheet" href="src/presentation/css/cards.css">
+</head>
+<body>
+  
+  <div class="container">
+    <header style="text-align: center; margin-bottom: var(--spacing-lg);">
+      <h1 style="font-size: 3rem; color: var(--primary-color);">FA Training Hub</h1>
+      <p style="color: var(--text-secondary); font-size: 1.2rem;">Alto Desempenho. Velocidade. Resultados.</p>
+    </header>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--spacing-lg);">
+      
+      <!-- Coach Panel -->
+      <section class="card-panel">
+        <h2>Visão do Coach</h2>
+        <p style="margin: var(--spacing-md) 0; color: var(--text-secondary);">
+          Acesse o Playbook. Monte treinos customizados, analise a biblioteca de exercícios e acompanhe o Overall do seu roster.
+        </p>
+        <button class="btn" onclick="location.href='src/presentation/pages/coach-dashboard.html'" aria-label="Acessar o Painel do Coach">Entrar como Coach</button>
+      </section>
+
+      <!-- Athlete Panel -->
+      <section class="card-panel">
+        <h2>Visão do Atleta (Game Day)</h2>
+        <p style="margin: var(--spacing-md) 0; color: var(--text-secondary);">
+          Sem distrações. Digite o ID do treino fornecido pelo seu Coach, bata seus PRs e veja seu card evoluir.
+        </p>
+        <div style="display: flex; justify-content: flex-start; margin-top: 15px;">
+          <button class="btn" style="width: 100%;" onclick="location.href='src/presentation/pages/athlete-workout.html'" aria-label="Acessar Game Day e preencher os dados do seu treino">Ir para o Game Day</button>
+        </div>
+      </section>
+      
+    </div>
+
+    <!-- Gamification Preview (Debug) -->
+    <div class="card-panel" style="margin-top: var(--spacing-lg);">
+      <h2 style="text-align: center; margin-bottom: 5px;">Seu Legado em Jogo</h2>
+      <p style="text-align: center; color: var(--text-secondary); margin-bottom: 20px;">Passe o mouse (ou toque) no card para ver as metas do Coach no verso.</p>
+      
+      <!-- INÍCIO DO NOVO CARD FLIP 3D -->
+      <div class="card-container">
+        <div class="card-inner">
+          
+          <!-- FRENTE DO CARD (Estilo Kobe) -->
+          <div class="card-front">
+            <div class="ovr-badge">94</div>
+            <div class="front-header">
+              <div class="front-title">RAFAEL S.</div>
+            </div>
+            
+            <div class="front-body">
+              <div class="side-text">OFFENSIVE LINEMAN</div>
+              <div class="player-image-placeholder"></div>
+            </div>
+            
+            <div class="front-footer">
+              <div class="nameplate"><span>THE WALL</span></div>
+              <div class="team-logo">OL</div>
+            </div>
+          </div>
+
+          <!-- VERSO DO CARD (Estilo Indiana / Treino do Coach) -->
+          <div class="card-back">
+            <div class="back-header">
+              <div class="back-subtitle">Game Day Prescription</div>
+              <div class="back-title">WORKOUT MVP</div>
+            </div>
+            
+            <!-- Lista de exercícios ditada pelo Coach -->
+            <div class="workout-stats">
+              <div class="stat-row">
+                <span class="stat-name">Squat (PR)</span>
+                <span class="stat-value">180 KG</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-name">Bench Press</span>
+                <span class="stat-value">4x8 - 120 KG</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-name">Power Clean</span>
+                <span class="stat-value">5x5 - 90 KG</span>
+              </div>
+              <div class="stat-row" style="border-left-color: #22c55e;">
+                <span class="stat-name">Attendance</span>
+                <span class="stat-value" style="color: #22c55e;">100%</span>
+              </div>
+            </div>
+            
+            <div class="back-footer">
+              COACH APPROVED
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <!-- FIM DO NOVO CARD FLIP 3D -->
+    </div>
+    
+  </div>
+
+  <script type="module">
+    // Exemplo de importação apenas para provar que a estrutura e as classes funcionam juntas no browser
+    import { Athlete } from './src/domain/Athlete.js';
+    import { CreateCollectibleCard } from './src/usecases/CreateCollectibleCard.js';
+    
+    // Teste de mesa simples via console
+    const rafa = new Athlete("1", "Rafa", "OL");
+    rafa.updatePR("ex-001", 110);
+    rafa.updatePR("ex-002", 90);
+    for(let i=0; i<25; i++) rafa.incrementAttendance();
+
+    const generateCard = new CreateCollectibleCard();
+    const cardData = generateCard.execute(rafa);
+    console.log("Teste de Domínio: Card Gerado com Sucesso:", cardData);
+  </script>
+</body>
+</html>

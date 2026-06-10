@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Coach {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  password  String?   // Adicionado para Auth de Coach (Fase 6)
+  teamName  String?
+  role      String    @default("HC") // HC, DC, OC, PERSONAL
+  athletes  Athlete[]
+  workouts  Workout[]
+  plays     Play[]
+}
+
+model Athlete {
+  id              String       @id @default(cuid())
+  name            String
+  email           String?      @unique  // Adicionado para Login de Atleta (Fase 5)
+  password        String?      // Adicionado para Auth de Atleta
+  position        String
+  overall         Int          @default(70)
+  attendanceCount Int          @default(0) // Controla a progressão do Overall
+  prCount         Int          @default(0) // Controla a progressão do Overall
+  themeColor      String?      // Cor do dashboard customizada (ex: '#facc15' ou 'gold')
+  profilePhoto    String?      // Link ou base64 da foto do perfil
+  cardBorder      String?      // Estilo de borda cosmética (GOLD, HOLO, OBSIDIAN, EMERALD)
+  isMVP           Boolean      @default(false) // Flag de MVP do time
+  
+  // Custom High-Performance Metrics & Attributes
+  height          String?      @default("6'2\"")
+  weight          String?      @default("220 lbs")
+  wingspan        String?      @default("75\"")
+  handSize        String?      @default("9.5\"")
+  forceAttr       Int?         @default(70)
+  skillAttr       Int?         @default(70)
+  evolutionAttr   Int?         @default(70)
+  speedAttr       Int?         @default(70)
+  powerAttr       Int?         @default(70)
+
+  coachId         String
+  coach           Coach            @relation(fields: [coachId], references: [id])
+  workouts        Workout[]
+  personalRecords PRRecord[]
+  playAssignments PlayAssignment[]
+  playFeedbacks   PlayFeedback[]
+
+  @@index([email])
+  @@index([coachId])
+}
+
+// Novo Modelo de Biblioteca de Exercícios (Gym e Home)
+model Exercise {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // Ex: Força, Velocidade, Mobilidade
+  location    String   // GYM ou HOME
+  mediaUrl    String?  // Imagem/GIF demonstrativa do movimento
+  description String?  // Explicação passo a passo do exercício
+}
+
+model Workout {
+  id        String       @id @default(cuid())
+  pinCode   String       @unique 
+  date      DateTime     @default(now())
+  coachId   String
+  coach     Coach        @relation(fields: [coachId], references: [id])
+  athleteId String?      
+  athlete   Athlete?     @relation(fields: [athleteId], references: [id])
+  sets      WorkoutSet[]
+  sleepScore Int?
+  painScore  Int?
+  rpeScore   Int?
+
+  @@index([pinCode])
+}
+
+model WorkoutSet {
+  id          String   @id @default(cuid())
+  workoutId   String
+  workout     Workout  @relation(fields: [workoutId], references: [id])
+  exerciseId  String
+  exerciseName String
+  targetSets  Int
+  targetReps  Int
+  targetLoad  Float?
+  actualLoad  Float?   
+  isCompleted Boolean  @default(false)
+  dayOfWeek   String   @default("monday") // monday, tuesday, wednesday, thursday, friday, saturday, sunday
+}
+
+model PRRecord {
+  id          String   @id @default(cuid())
+  athleteId   String
+  athlete     Athlete  @relation(fields: [athleteId], references: [id])
+  exerciseId  String
+  exerciseName String
+  maxLoad     Float
+  dateAchieved DateTime @default(now())
+}
+
+model Play {
+  id        String           @id @default(cuid())
+  name      String
+  sport     String           @default("Futebol Americano")
+  fieldSize String           @default("600,400")
+  dataJSON  String
+  coachId   String
+  coach     Coach            @relation(fields: [coachId], references: [id])
+  assigned  PlayAssignment[]
+  feedback  PlayFeedback[]
+
+  @@index([coachId])
+}
+
+model PlayAssignment {
+  id         String   @id @default(cuid())
+  playId     String
+  play       Play     @relation(fields: [playId], references: [id])
+  athleteId  String
+  athlete    Athlete  @relation(fields: [athleteId], references: [id])
+  assignedAt DateTime @default(now())
+
+  @@index([playId])
+  @@index([athleteId])
+}
+
+model PlayFeedback {
+  id        String   @id @default(cuid())
+  playId    String
+  play      Play     @relation(fields: [playId], references: [id])
+  athleteId String
+  athlete   Athlete  @relation(fields: [athleteId], references: [id])
+  status    String
+  comment   String?
+  audioUrl  String?
+  updatedAt DateTime @updatedAt
+
+  @@index([playId])
+  @@index([athleteId])
+}
