@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { AthleteDataService } from '@/lib/domain/AthleteDataService';
+import { AthleteDataService } from '@/lib/infrastructure/AthleteDataService';
 
 export async function GET(request, { params }) {
   try {

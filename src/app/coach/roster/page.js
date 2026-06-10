@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import TacticalDashboard from '@/components/TacticalDashboard';
 import PhysioDashboard from '@/components/PhysioDashboard';
+import HolographicComparator from '@/components/HolographicComparator';
 
 export default function RosterAdmin() {
   const [coach, setCoach] = useState(null);
@@ -611,6 +612,11 @@ export default function RosterAdmin() {
             </table>
           </div>
         </section>
+      </div>
+
+      {/* Comparador Holográfico 3D */}
+      <div style={{ marginTop: '35px' }}>
+        <HolographicComparator athletes={athletes} />
       </div>
 
       {/* POPUP MODAL: TACTICAL ESPIONAGE DASHBOARD */}

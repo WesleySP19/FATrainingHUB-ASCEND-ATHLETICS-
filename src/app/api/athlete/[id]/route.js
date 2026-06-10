@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { AthleteDataService } from '@/lib/domain/AthleteDataService';
+import { AthleteDataService } from '@/lib/infrastructure/AthleteDataService';
 
 const service = new AthleteDataService();
 

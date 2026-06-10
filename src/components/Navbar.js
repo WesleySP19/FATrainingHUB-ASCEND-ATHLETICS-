@@ -161,6 +161,7 @@ export default function Navbar() {
             <>
               <Link href={`/athlete/${session.id}`} className="nav-link">Locker Room</Link>
               <Link href="/training" className="nav-link">Training Hub</Link>
+              <Link href={`/athlete/${session.id}/playbook`} className="nav-link">Playbook 📖</Link>
             </>
           )}
 
@@ -168,6 +169,7 @@ export default function Navbar() {
             <>
               <Link href="/coach/roster" className="nav-link">Roster</Link>
               <Link href="/coach" className="nav-link">Montar Planilha</Link>
+              <Link href="/coach/playbook" className="nav-link">Playbook 📖</Link>
             </>
           )}
 
@@ -206,6 +208,7 @@ export default function Navbar() {
           <>
             <Link href={`/athlete/${session.id}`} className="nav-link" onClick={() => setMobileMenuOpen(false)}>Locker Room</Link>
             <Link href="/training" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Training Hub</Link>
+            <Link href={`/athlete/${session.id}/playbook`} className="nav-link" onClick={() => setMobileMenuOpen(false)}>Playbook 📖</Link>
           </>
         )}
 
@@ -213,6 +216,7 @@ export default function Navbar() {
           <>
             <Link href="/coach/roster" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Roster</Link>
             <Link href="/coach" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Montar Planilha</Link>
+            <Link href="/coach/playbook" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Playbook 📖</Link>
           </>
         )}
 
