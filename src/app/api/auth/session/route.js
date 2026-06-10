@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'ascend-secret-key-12345';
 
 export async function GET(request) {
   const token = request.cookies.get('token')?.value;
@@ -8,14 +11,8 @@ export async function GET(request) {
   }
 
   try {
-    const parts = token.split('.');
-    if (parts.length !== 3) throw new Error('Invalid JWT format');
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const payload = jwt.verify(token, JWT_SECRET);
 
-    // Verifica expiração
-    if (payload.exp && Date.now() >= payload.exp * 1000) {
-      throw new Error('Token expired');
-    }
 
     if (payload.role === 'ROLE_COACH') {
       const coach = await prisma.coach.findUnique({

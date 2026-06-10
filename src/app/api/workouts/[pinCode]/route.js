@@ -9,7 +9,15 @@ export async function GET(request, { params }) {
   try {
     const workout = await prisma.workout.findUnique({
       where: { pinCode },
-      include: { sets: true, coach: true }
+      include: { 
+        sets: true, 
+        coach: true,
+        athlete: {
+          include: {
+            personalRecords: true
+          }
+        }
+      }
     });
 
     if (!workout) {

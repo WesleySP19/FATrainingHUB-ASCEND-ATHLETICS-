@@ -149,6 +149,88 @@ h1, h2, h3, h4, h5, h6 {
   transition: opacity 0.3s;
 }
 
+/* === Coach Playbook Creator Redesign Utilities (Image 2 Style) === */
+.ex-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 991px) {
+  .ex-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ex-card {
+  background: rgba(15, 21, 36, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 15px;
+  padding: 15px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.ex-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+.ex-image-container {
+  width: 100%;
+  height: 100%;
+  min-height: 100px;
+  background: #090d16;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.weekly-chalkboard {
+  background: linear-gradient(135deg, rgba(15, 21, 36, 0.9) 0%, rgba(7, 10, 19, 0.95) 100%);
+  border: 1.5px solid rgba(249, 115, 22, 0.2);
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.feature-list-item {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  gap: 15px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  transition: background 0.2s ease;
+}
+
+.feature-list-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.feature-badge-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.3rem;
+}
+
+
 @keyframes holoSweep {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
@@ -641,5 +723,164 @@ h1, h2, h3, h4, h5, h6 {
   pointer-events: none;
 }
 
+/* === Home Redesign Style Utilities (Image 2 Layout + Image 1 Palette) === */
+@keyframes floatAnimation {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
 
+.animate-float {
+  animation: floatAnimation 4s ease-in-out infinite;
+}
 
+.hero-banner {
+  background: linear-gradient(135deg, rgba(15, 21, 36, 0.95) 0%, rgba(7, 10, 19, 0.98) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(249, 115, 22, 0.03);
+  position: relative;
+  border-radius: 36px 36px 8px 36px; /* Similar to Image 2 curved style */
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  padding: 60px 50px 80px 50px;
+  gap: 30px;
+  align-items: center;
+}
+
+@media (max-width: 991px) {
+  .hero-banner {
+    grid-template-columns: 1fr;
+    padding: 40px 30px 60px 30px;
+    border-radius: 24px;
+  }
+}
+
+.stats-overlay {
+  background: rgba(15, 21, 36, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 30px 40px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-top: -40px;
+  margin-right: 50px;
+  float: right;
+  width: 50%;
+  position: relative;
+  z-index: 10;
+}
+
+@media (max-width: 991px) {
+  .stats-overlay {
+    width: 100%;
+    margin-right: 0;
+    float: none;
+    margin-top: 20px;
+  }
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-val {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--primary-color);
+  text-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+.subhero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  margin-top: 80px;
+  margin-bottom: 60px;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .subhero-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    margin-top: 40px;
+  }
+}
+
+/* =========================================
+   Athlete Dashboard Responsive Overrides
+   ========================================= */
+
+/* Hero Showcase Section */
+@media (max-width: 991px) {
+  section[style*="gridTemplateColumns"] {
+    /* These are overridden inline, so we use !important sparingly */
+  }
+}
+
+/* Utility: force single-column stacking on smaller screens via inline style override */
+@media (max-width: 900px) {
+  .athlete-hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 30px !important;
+    padding: 30px !important;
+  }
+  
+  .athlete-perf-grid {
+    grid-template-columns: 1fr !important;
+    gap: 25px !important;
+  }
+  
+  .athlete-attr-grid {
+    grid-template-columns: 1fr !important;
+    gap: 25px !important;
+  }
+
+  .athlete-metrics-tiles {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .athlete-hero-name-lg {
+    font-size: 4rem !important;
+  }
+
+  .athlete-hero-name-sm {
+    font-size: 2.2rem !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .athlete-metrics-tiles {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .athlete-hero-name-lg {
+    font-size: 2.8rem !important;
+  }
+
+  .athlete-hero-name-sm {
+    font-size: 1.6rem !important;
+  }
+}

@@ -10,3 +10,28 @@ export async function GET() {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+// Cria um novo exercício dinamicamente
+export async function POST(request) {
+  try {
+    const data = await request.json();
+    if (!data.name || !data.type || !data.location) {
+      return NextResponse.json({ success: false, error: 'Campos obrigatórios ausentes (nome, tipo ou ambiente).' }, { status: 400 });
+    }
+
+    const exercise = await prisma.exercise.create({
+      data: {
+        name: data.name,
+        type: data.type,
+        location: data.location,
+        description: data.description || null,
+        mediaUrl: data.mediaUrl || null
+      }
+    });
+
+    return NextResponse.json({ success: true, exercise });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+

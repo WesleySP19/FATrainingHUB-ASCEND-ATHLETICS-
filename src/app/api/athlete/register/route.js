@@ -33,7 +33,8 @@ export async function POST(request) {
       { expiresIn: '7d' }
     );
 
-    const response = NextResponse.json({ success: true, athlete });
+    const { password: _, ...athleteWithoutPassword } = athlete;
+    const response = NextResponse.json({ success: true, athlete: athleteWithoutPassword });
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

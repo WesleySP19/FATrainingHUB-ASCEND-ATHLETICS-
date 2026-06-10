@@ -26,6 +26,11 @@ export default function AthleteDashboard() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState('');
 
+  // Team states
+  const [team, setTeam] = useState(null);
+  const [teamLoading, setTeamLoading] = useState(true);
+  const [showTeamHistory, setShowTeamHistory] = useState(false);
+
   const handleMouseMove = (e) => {
     const card = e.currentTarget;
     const rect = card.getBoundingClientRect();
@@ -100,6 +105,7 @@ export default function AthleteDashboard() {
   useEffect(() => {
     if (id) {
       fetchAthleteData();
+      fetchTeamData();
     }
   }, [id]);
 
@@ -121,6 +127,21 @@ export default function AthleteDashboard() {
       setError('Sem conexão com o servidor.');
     }
     setLoading(false);
+  };
+
+  const fetchTeamData = async () => {
+    try {
+      setTeamLoading(true);
+      const res = await fetch(`/api/athlete/${id}/team`);
+      const data = await res.json();
+      if (data.success) {
+        setTeam(data.team);
+      }
+    } catch (e) {
+      console.error('Erro ao buscar time:', e);
+    } finally {
+      setTeamLoading(false);
+    }
   };
 
   const handleSaveCustomization = async (e) => {
@@ -254,7 +275,7 @@ export default function AthleteDashboard() {
       const y = 100 + r * Math.sin(angle);
       return `${x},${y}`;
     }).join(' ');
-    return <polygon key={scale} points={pts} fill="none" stroke="rgba(6, 182, 212, 0.15)" strokeWidth="1" />;
+    return <polygon key={`pentagon-${scale}`} points={pts} fill="none" stroke="rgba(6, 182, 212, 0.15)" strokeWidth="1" />;
   };
 
   const drawAxis = (i, label) => {
@@ -264,7 +285,7 @@ export default function AthleteDashboard() {
     const labelX = 100 + 78 * Math.cos(angle);
     const labelY = 100 + 78 * Math.sin(angle);
     return (
-      <g key={i}>
+      <g key={`axis-${i}`}>
         <line x1="100" y1="100" x2={outerX} y2={outerY} stroke="rgba(6, 182, 212, 0.25)" strokeWidth="1" />
         <text x={labelX} y={labelY} fill="#06b6d4" fontSize="8" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle">{label}</text>
       </g>
@@ -454,19 +475,115 @@ export default function AthleteDashboard() {
   };
 
   return (
-    <div style={{ background: getThemeBackground(), minHeight: '100vh', transition: 'background 0.5s ease', paddingBottom: '80px', color: '#fff' }}>
-      <div className="container">
+    <div style={{ background: getThemeBackground(), minHeight: '100vh', transition: 'background 0.5s ease', paddingBottom: '80px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
+      
+      {/* Symmetrical Sided Team Logo Watermark (Personal per Team) */}
+      {team && team.logoUrl && (
+        <div style={{
+          position: 'absolute',
+          top: '10%',
+          right: '-120px',
+          width: '650px',
+          height: '650px',
+          backgroundImage: `url(${team.logoUrl})`,
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          opacity: 0.045,
+          filter: 'blur(1px) grayscale(100%)',
+          pointerEvents: 'none',
+          zIndex: 1
+        }} />
+      )}
+
+      {/* Symmetrical Left Bottom Watermark for visual balance */}
+      {team && team.logoUrl && (
+        <div style={{
+          position: 'absolute',
+          bottom: '5%',
+          left: '-180px',
+          width: '550px',
+          height: '550px',
+          backgroundImage: `url(${team.logoUrl})`,
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          opacity: 0.035,
+          filter: 'blur(2px) grayscale(100%)',
+          pointerEvents: 'none',
+          zIndex: 1
+        }} />
+      )}
+
+      {/* Dynamic Glowing Ambient Aura reflecting the athlete's card border custom tier */}
+      <div style={{
+        position: 'absolute',
+        top: '15%',
+        left: '20%',
+        width: '700px',
+        height: '700px',
+        borderRadius: '50%',
+        background: cardBorder === 'GOLD' ? 'radial-gradient(circle, rgba(251,191,36,0.06) 0%, transparent 70%)' :
+                    cardBorder === 'HOLO' ? 'radial-gradient(circle, rgba(192,132,252,0.06) 0%, transparent 70%)' :
+                    cardBorder === 'OBSIDIAN' ? 'radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%)' :
+                    cardBorder === 'EMERALD' ? 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)' :
+                    cardBorder === 'HISTORIC' ? 'radial-gradient(circle, rgba(251,191,36,0.09) 0%, transparent 70%)' :
+                    'radial-gradient(circle, rgba(6,182,212,0.04) 0%, transparent 70%)',
+        filter: 'blur(50px)',
+        pointerEvents: 'none',
+        zIndex: 1
+      }} />
+
+      {/* Secondary glowing ambient highlight */}
+      <div style={{
+        position: 'absolute',
+        bottom: '10%',
+        right: '15%',
+        width: '600px',
+        height: '600px',
+        borderRadius: '50%',
+        background: cardBorder === 'GOLD' ? 'radial-gradient(circle, rgba(251,191,36,0.04) 0%, transparent 70%)' :
+                    cardBorder === 'HOLO' ? 'radial-gradient(circle, rgba(192,132,252,0.04) 0%, transparent 70%)' :
+                    cardBorder === 'OBSIDIAN' ? 'radial-gradient(circle, rgba(249,115,22,0.04) 0%, transparent 70%)' :
+                    cardBorder === 'EMERALD' ? 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)' :
+                    cardBorder === 'HISTORIC' ? 'radial-gradient(circle, rgba(251,191,36,0.06) 0%, transparent 70%)' :
+                    'radial-gradient(circle, rgba(6,182,212,0.03) 0%, transparent 70%)',
+        filter: 'blur(50px)',
+        pointerEvents: 'none',
+        zIndex: 1
+      }} />
+
+      <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', position: 'relative', zIndex: 2 }}>
         
         {/* Navbar */}
-        <nav style={{ padding: '20px 0', borderBottom: '1px solid rgba(6, 182, 212, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <nav style={{
+          padding: '24px 0',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '30px'
+        }}>
           <div>
-            <h2 style={{ color: '#06b6d4', margin: 0, textShadow: '0 0 10px rgba(6,182,212,0.3)' }}>LOCKER ROOM HUD</h2>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Modalidade: {athlete.position === 'Força Base' ? 'Powerlifting' : (athlete.position === 'Forwards' || athlete.position === 'Backs' ? 'Rugby' : 'Futebol Americano')}
+            <h2 style={{
+              color: '#fff',
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.8rem',
+              fontWeight: '900',
+              letterSpacing: '2px',
+              margin: 0,
+              textShadow: '0 0 15px rgba(255,255,255,0.1)'
+            }}>
+              ASCEND <span style={{ color: '#06b6d4' }}>ATHLETICS</span>
+            </h2>
+            <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.8rem', letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginTop: '2px' }}>
+              Locker Room HUD &bull; {athlete.position === 'Força Base' ? 'Powerlifting' : (athlete.position === 'Forwards' || athlete.position === 'Backs' ? 'Rugby' : 'Futebol Americano')}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-            <Link href="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 'bold' }} onMouseEnter={e => e.target.style.color = '#06b6d4'} onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}>&larr; Voltar para Home</Link>
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <Link href="/" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.85rem', letterSpacing: '1px', textTransform: 'uppercase', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = '#06b6d4'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.7)'}>
+              &larr; Voltar para Home
+            </Link>
             <button 
               onClick={async () => {
                 localStorage.removeItem('athlete');
@@ -475,46 +592,179 @@ export default function AthleteDashboard() {
                 } catch (e) {}
                 window.location.href = '/athlete/login';
               }} 
-              style={{ background: 'transparent', border: 'none', color: 'var(--accent-red)', textDecoration: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem', padding: 0 }}
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '20px',
+                color: '#ef4444',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                padding: '8px 16px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => {
+                e.target.style.background = 'rgba(239, 68, 68, 0.2)';
+                e.target.style.borderColor = '#ef4444';
+              }}
+              onMouseLeave={e => {
+                e.target.style.background = 'rgba(239, 68, 68, 0.1)';
+                e.target.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+              }}
             >
               Sair
             </button>
           </div>
         </nav>
 
-        {/* Banner MVP */}
+        {/* Banner MVP (Premium Ribbon) */}
         {mvp && mvp.id === athlete.id && (
           <div style={{
-            marginTop: '25px',
-            padding: '20px',
-            borderRadius: '8px',
-            background: 'linear-gradient(90deg, rgba(6, 182, 212, 0.15) 0%, rgba(6, 182, 212, 0.03) 100%)',
-            border: '1px solid #06b6d4',
+            marginBottom: '35px',
+            padding: '24px 30px',
+            borderRadius: '16px',
+            background: 'linear-gradient(90deg, rgba(251, 191, 36, 0.15) 0%, rgba(251, 191, 36, 0.02) 100%)',
+            borderLeft: '4px solid #fbbf24',
+            borderRight: '1px solid rgba(251, 191, 36, 0.1)',
+            borderTop: '1px solid rgba(251, 191, 36, 0.1)',
+            borderBottom: '1px solid rgba(251, 191, 36, 0.1)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            boxShadow: '0 0 20px rgba(6,182,212,0.2)'
+            boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <span style={{ fontSize: '2rem' }}>👑</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <span style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 0 10px rgba(251, 191, 36, 0.6))' }}>👑</span>
               <div>
-                <h4 style={{ color: '#06b6d4', margin: 0, fontSize: '0.8rem', letterSpacing: '1.5px', textShadow: '0 0 8px #06b6d4' }}>VOCÊ FOI ELEITO PELO COACH</h4>
-                <p style={{ margin: '5px 0 0 0', fontSize: '1.25rem', fontWeight: 'bold', letterSpacing: '1px' }}>MVP DO SEU ROSTER!</p>
+                <h4 style={{ color: '#fbbf24', margin: 0, fontSize: '0.8rem', letterSpacing: '2px', fontWeight: '800' }}>STATUS PREMIUM</h4>
+                <p style={{ margin: '5px 0 0 0', fontSize: '1.5rem', fontWeight: '900', letterSpacing: '1px', textTransform: 'uppercase', color: '#fff' }}>
+                  Eleito MVP do Roster Oficial
+                </p>
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <span style={{ color: '#06b6d4', fontWeight: 'bold', fontSize: '1.4rem', textShadow: '0 0 10px #06b6d4' }}>{athlete.overall} OVR</span>
+              <span style={{ color: '#fbbf24', fontWeight: '900', fontSize: '1.8rem', textShadow: '0 0 15px rgba(251,191,36,0.4)' }}>{athlete.overall} OVR</span>
             </div>
           </div>
         )}
 
-        {/* 3-Column Grid HUD */}
-        <div className="hud-container">
-          
-          {/* Column 1 (Left): Hero Profile */}
-          <aside className="hud-panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <h3 style={{ fontSize: '1rem', color: '#06b6d4', borderBottom: '1px solid rgba(6,182,212,0.15)', paddingBottom: '8px', margin: 0 }}>PERFIL DO ATLETA</h3>
-            
+        {/* Hero Showcase Section */}
+        <section className="athlete-hero-grid" style={{
+          display: 'grid',
+          gridTemplateColumns: '1.2fr 0.8fr',
+          gap: '40px',
+          marginBottom: '50px',
+          alignItems: 'center',
+          background: 'linear-gradient(180deg, rgba(15,21,36,0.3) 0%, rgba(7,10,19,0.5) 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.05)',
+          borderRadius: '24px',
+          padding: '40px',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          {/* Subtle backdrop glowing line */}
+          <div style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, height: '2px',
+            background: 'linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.5), transparent)'
+          }} />
+
+          {/* Left Column: Big typography & physical metrics */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
+                <span style={{
+                  background: 'rgba(6, 182, 212, 0.1)',
+                  color: '#06b6d4',
+                  border: '1px solid rgba(6, 182, 212, 0.3)',
+                  borderRadius: '4px',
+                  padding: '4px 10px',
+                  fontSize: '0.75rem',
+                  fontWeight: 'bold',
+                  letterSpacing: '1.5px'
+                }}>
+                  {athlete.position?.toUpperCase()}
+                </span>
+                <span style={{
+                  color: 'rgba(255,255,255,0.4)',
+                  fontSize: '0.8rem',
+                  fontWeight: 'bold',
+                  letterSpacing: '2px'
+                }}>
+                  ASCEND ATHLETICS
+                </span>
+              </div>
+
+              {/* Huge Sports Presentation Name */}
+              <div style={{ position: 'relative' }}>
+                {/* Large outline backdrop word */}
+                <h1 className="athlete-hero-name-lg" style={{
+                  fontSize: '6.5rem',
+                  lineHeight: '0.8',
+                  margin: 0,
+                  fontWeight: '950',
+                  color: 'rgba(255, 255, 255, 0.02)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '-2px',
+                  userSelect: 'none',
+                  WebkitTextStroke: '1px rgba(255, 255, 255, 0.05)',
+                  marginBottom: '-15px'
+                }}>
+                  {athlete.name?.split(' ')[0]}
+                </h1>
+                <h1 className="athlete-hero-name-sm" style={{
+                  fontSize: '3.5rem',
+                  lineHeight: '1',
+                  margin: 0,
+                  fontWeight: '900',
+                  color: '#fff',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  textShadow: '0 4px 20px rgba(0,0,0,0.6)'
+                }}>
+                  {athlete.name?.toUpperCase()}
+                </h1>
+              </div>
+            </div>
+
+            {/* Styled Physical Metrics Tiles */}
+            <div>
+              <h3 style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', marginBottom: '15px' }}>MÉTRICAS FÍSICAS DE ELITE</h3>
+              <div className="athlete-metrics-tiles" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '15px'
+              }}>
+                {[
+                  { label: 'ALTURA', value: athlete.height || "6'2\"" },
+                  { label: 'PESO', value: athlete.weight || "220 lbs" },
+                  { label: 'ENVERGADURA', value: athlete.wingspan || "75\"" },
+                  { label: 'MÃO', value: athlete.handSize || "9.5\"" }
+                ].map((m, i) => (
+                  <div key={i} style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    borderRadius: '12px',
+                    padding: '15px',
+                    textAlign: 'center',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                    transition: 'transform 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '5px' }}>{m.label}</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fff' }}>{m.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Dynamic floating Card */}
+          <div style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
             <div 
               className="card-container" 
               onMouseMove={handleMouseMove}
@@ -523,95 +773,399 @@ export default function AthleteDashboard() {
               style={{ 
                 perspective: '1000px', 
                 cursor: 'pointer',
-                width: '100%',
-                height: '400px',
-                margin: '10px 0',
+                width: '300px',
+                height: '440px',
+                margin: 0,
                 position: 'relative'
               }}
             >
               <div className="card-inner" style={{ transition: 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transformStyle: 'preserve-3d', width: '100%', height: '100%' }}>
-                {/* FRONT CARD */}
-                <div className={`card-front ${getCardBorderClass(cardBorder)}`} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', position: 'absolute', width: '100%', backfaceVisibility: 'hidden' }}>
-                  <div className="ovr-badge" style={{ fontSize: '2.5rem', top: '10px', right: '15px' }}>{athlete.overall}</div>
-                  <div className="front-header" style={{ padding: '10px 5px' }}>
-                    <div className="front-title" style={{ fontSize: '1.5rem' }}>{athlete.name?.toUpperCase()}</div>
-                  </div>
-                  <div className="front-body" style={{ flexGrow: 1, padding: '10px' }}>
-                    <div className="side-text" style={{ fontSize: '0.55rem', left: '5px' }}>{athlete.position}</div>
+                {/* FRONT CARD (Refactored to Jinx / Lorcana style in Image 3) */}
+                <div 
+                  className={`card-front ${getCardBorderClass(cardBorder)}`} 
+                  style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between', 
+                    height: '100%', 
+                    position: 'absolute', 
+                    width: '100%', 
+                    backfaceVisibility: 'hidden', 
+                    overflow: 'hidden',
+                    ...getCardBorderStyle() 
+                  }}
+                >
+                  {/* Full-bleed Portrait Background */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1, overflow: 'hidden' }}>
                     {profilePhoto ? (
-                      <img src={profilePhoto} alt={athlete.name} style={{ width: '140px', height: '140px', borderRadius: '10px', objectFit: 'cover', border: '3px solid #06b6d4', boxShadow: '0 10px 20px rgba(0,0,0,0.5)', zIndex: 2 }} />
+                      <img 
+                        src={profilePhoto} 
+                        alt={athlete.name} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      />
                     ) : (
-                      <div className="player-image-placeholder" style={{ width: '140px', height: '140px', borderRadius: '10px', border: '3px solid #06b6d4', backgroundColor: '#333' }}></div>
+                      <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: '3rem', opacity: 0.15 }}>🛡️</span>
+                      </div>
                     )}
+                    {/* Shadow overlay gradient to enhance readability */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      background: 'linear-gradient(to top, rgba(2, 6, 23, 0.95) 0%, rgba(2, 6, 23, 0.4) 40%, rgba(2, 6, 23, 0.25) 100%)',
+                      zIndex: 2
+                    }} />
                   </div>
-                  <div className="front-footer" style={{ padding: '10px' }}>
-                    <div className="nameplate" style={{ fontSize: '1rem', padding: '3px 10px' }}>
-                      <span>ASCEND ATHLETICS</span>
+
+                  {/* Inner Gold Frame Border */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '12px', left: '12px', right: '12px', bottom: '12px',
+                    border: '2px solid rgba(251, 191, 36, 0.45)',
+                    borderRadius: '12px',
+                    zIndex: 2,
+                    pointerEvents: 'none'
+                  }} />
+
+                  {/* Left-top vertical circle badges */}
+                  <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 5 }}>
+                    {/* Circle 1: Position Badge */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: '#ef4444',
+                      color: '#fff',
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      fontSize: '0.7rem',
+                      fontWeight: '950',
+                      border: '1.5px solid #fff',
+                      boxShadow: '0 2px 5px rgba(0,0,0,0.3)'
+                    }}>
+                      {athlete.position || 'DL'}
                     </div>
-                    <div className="team-logo" style={{ width: '40px', height: '40px', fontSize: '1.2rem' }}>
-                      {athlete.position?.substring(0, 2).toUpperCase()}
+
+                    {/* Circle 2: Sport Category Icon */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: '#8b5cf6',
+                      color: '#fff',
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      fontSize: '0.65rem',
+                      fontWeight: '900',
+                      border: '1.5px solid #fff',
+                      boxShadow: '0 2px 5px rgba(0,0,0,0.3)'
+                    }}>
+                      {athlete.position === 'Força Base' ? 'PL' : (athlete.position === 'Forwards' || athlete.position === 'Backs' ? 'RG' : 'FA')}
                     </div>
+                  </div>
+
+                  {/* Top-right overall rating */}
+                  <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 5 }}>
+                    <span style={{
+                      fontSize: '1.7rem',
+                      fontWeight: '950',
+                      color: '#fff',
+                      textShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(6,182,212,0.3)'
+                    }}>
+                      {athlete.overall}
+                    </span>
+                  </div>
+
+                  {/* Player Name Tag (Positioned right above the main title band) */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '235px',
+                    left: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    zIndex: 5
+                  }}>
+                    <span style={{
+                      background: '#fbbf24',
+                      color: '#000',
+                      fontSize: '0.55rem',
+                      fontWeight: '900',
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      letterSpacing: '0.5px',
+                      textTransform: 'uppercase'
+                    }}>
+                      {athlete.overall >= 90 ? 'MYTHIC' : athlete.overall >= 80 ? 'EPIC' : 'LEGEND'}
+                    </span>
+                    <span style={{
+                      color: '#fff',
+                      fontSize: '0.95rem',
+                      fontWeight: '900',
+                      textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                      letterSpacing: '0.5px'
+                    }}>
+                      {athlete.name?.toUpperCase()}
+                    </span>
+                  </div>
+
+                  {/* Classification Title Band */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '260px',
+                    left: 0,
+                    right: 0,
+                    background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.9) 0%, rgba(109, 40, 217, 0.75) 100%)',
+                    borderTop: '1px solid rgba(255,255,255,0.15)',
+                    borderBottom: '1px solid rgba(255,255,255,0.15)',
+                    padding: '5px 20px',
+                    zIndex: 4,
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{
+                      color: '#fff',
+                      fontSize: '1rem',
+                      fontWeight: '900',
+                      fontFamily: 'var(--font-display)',
+                      letterSpacing: '0.5px',
+                      textTransform: 'uppercase'
+                    }}>
+                      {athlete.position === 'DL' ? 'Muralha de Trincheira' : athlete.position === 'QB' ? 'Lançador de Elite' : 'Estilo Lendário'}
+                    </span>
+                  </div>
+
+                  {/* Lore Description Box at bottom */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '300px',
+                    left: '20px',
+                    right: '20px',
+                    bottom: '20px',
+                    background: 'rgba(2, 6, 23, 0.75)',
+                    backdropFilter: 'blur(4px)',
+                    border: '1.5px solid rgba(255,255,255,0.08)',
+                    borderRadius: '8px',
+                    padding: '8px 10px',
+                    zIndex: 4,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    textAlign: 'center'
+                  }}>
+                    <p style={{
+                      margin: 0,
+                      color: 'rgba(255,255,255,0.85)',
+                      fontSize: '0.7rem',
+                      lineHeight: '1.3',
+                      fontStyle: 'italic',
+                      fontFamily: 'var(--font-base)'
+                    }}>
+                      {athlete.position === 'DL' ? '"Força explosiva na trincheira. Ao iniciar o Scrimmage, ganha +15 de potência concêntrica de quadril."' : 
+                       athlete.position === 'QB' ? '"Precisão milimétrica e leitura rápida de rotas. Lança passes perfeitos superando a cobertura."' :
+                       '"Atleta de alto rendimento treinado nos programas de elite da Ascend Athletics."'}
+                    </p>
+                  </div>
+
+                  {/* Center Gem on frame border */}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '6px',
+                    left: '50%',
+                    width: '8px',
+                    height: '8px',
+                    background: '#a855f7',
+                    border: '1px solid #fff',
+                    transform: 'translateX(-50%) rotate(45deg)',
+                    boxShadow: '0 0 6px #a855f7',
+                    zIndex: 10
+                  }} />
+
+                  {/* Bottom info tags */}
+                  <div style={{ position: 'absolute', bottom: '4px', left: '16px', fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', zIndex: 10 }}>
+                    ASC - {athlete.overall}/99
+                  </div>
+                  <div style={{ position: 'absolute', bottom: '4px', right: '16px', fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', zIndex: 10 }}>
+                    ⚡ 2026 ASCEND
                   </div>
                 </div>
 
-                {/* BACK CARD */}
-                <div className={`card-back ${getCardBorderClass(cardBorder)}`} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', position: 'absolute', width: '100%', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-                  <div className="back-header" style={{ padding: '10px' }}>
-                    <div className="back-subtitle" style={{ fontSize: '0.65rem' }}>Training Prescription</div>
-                    <div className="back-title" style={{ fontSize: '1.6rem' }}>RECORD BOOK</div>
+                {/* BACK CARD (Refactored to Ryu / Street Fighter style in Image 4) */}
+                <div 
+                  className={`card-back ${getCardBorderClass(cardBorder)}`} 
+                  style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between', 
+                    height: '100%', 
+                    position: 'absolute', 
+                    width: '100%', 
+                    backfaceVisibility: 'hidden', 
+                    transform: 'rotateY(180deg)',
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                    backgroundImage: 'radial-gradient(circle at center, transparent 30%, rgba(148, 163, 184, 0.08) 31%), repeating-conic-gradient(from 0deg, transparent 0deg 10deg, rgba(148, 163, 184, 0.05) 10deg 20deg)',
+                    border: '4px solid #475569',
+                    borderRadius: '15px',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  {/* Top Left OVR badge */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '12px',
+                    left: '12px',
+                    background: '#1e293b',
+                    color: '#fff',
+                    padding: '3px 10px',
+                    borderRadius: '6px',
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: '950',
+                    fontSize: '1.15rem',
+                    border: '1.5px solid #fff',
+                    boxShadow: '0 3px 6px rgba(0,0,0,0.15)',
+                    zIndex: 5
+                  }}>
+                    {athlete.overall}
                   </div>
-                  <div className="workout-stats" style={{ padding: '10px', gap: '5px', overflowY: 'auto' }}>
-                    <div className="stat-row" style={{ padding: '6px 10px' }}>
-                      <span className="stat-name" style={{ fontSize: '0.85rem' }}>Constância</span>
-                      <span className="stat-value" style={{ fontSize: '1rem' }}>{athlete.attendanceCount || 0} treinos</span>
+
+                  {/* Top Right Header Nameplate */}
+                  <div style={{ position: 'absolute', top: '12px', right: '16px', textAlign: 'right', zIndex: 5 }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '950', color: '#0f172a', textTransform: 'uppercase', lineHeight: '1', fontFamily: 'var(--font-display)' }}>
+                      {athlete.name?.split(' ')[0]}
                     </div>
-                    <div className="stat-row" style={{ padding: '6px 10px' }}>
-                      <span className="stat-name" style={{ fontSize: '0.85rem' }}>Recordes PR</span>
-                      <span className="stat-value" style={{ fontSize: '1rem' }}>{prs.length}</span>
+                    <div style={{ fontSize: '0.55rem', fontWeight: '800', color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', marginTop: '2px' }}>
+                      ASCEND ATHLETICS
                     </div>
-                    {prs.slice(0, 2).map((pr, idx) => (
-                      <div className="stat-row" key={idx} style={{ padding: '6px 10px' }}>
-                        <span className="stat-name" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>{pr.exerciseName}</span>
-                        <span className="stat-value" style={{ fontSize: '1rem', color: '#22c55e' }}>{pr.maxLoad} KG</span>
+                  </div>
+
+                  {/* Middle Area bordered polygon segment */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '52px',
+                    left: '16px',
+                    right: '16px',
+                    height: '315px',
+                    background: '#ffffff',
+                    border: '2.5px solid #0f172a',
+                    borderRadius: '12px',
+                    padding: '14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 6px 12px rgba(0,0,0,0.04)',
+                    zIndex: 4
+                  }}>
+                    {/* Bio Text */}
+                    <p style={{
+                      margin: 0,
+                      color: '#334155',
+                      fontSize: '0.68rem',
+                      lineHeight: '1.35',
+                      fontWeight: '700',
+                      textAlign: 'justify',
+                      fontFamily: 'sans-serif'
+                    }}>
+                      Nascido para dominar as trincheiras físicas e táticas do time, {athlete.name?.split(' ')[0]} realiza uma periodização constante sob a liderança de seu Coach para elevar o nível de OVR. Atleta de alto rendimento focado em consistência e PRs.
+                    </p>
+
+                    {/* Stats details list inside the polygon */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      borderTop: '1.5px dashed #cbd5e1',
+                      paddingTop: '10px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '#0.65rem', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>CONSTÂNCIA</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: '900', color: '#0f172a' }}>{athlete.attendanceCount || 0} treinos</span>
                       </div>
-                    ))}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '#0.65rem', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>RECORDES PR</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: '900', color: '#ef4444' }}>{prs.length}</span>
+                      </div>
+                      
+                      {/* PRs detail previews */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
+                        {prs.slice(0, 2).map((pr, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '4px 8px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                            <span style={{ fontSize: '0.62rem', fontWeight: '700', color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>{pr.exerciseName}</span>
+                            <span style={{ fontSize: '0.65rem', fontWeight: '900', color: '#10b981' }}>{pr.maxLoad} KG</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div className="back-footer" style={{ padding: '10px', fontSize: '0.75rem' }}>COACH APPROVED</div>
+
+                  {/* Bottom Banner GAMES */}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '12px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    fontSize: '1.25rem',
+                    fontWeight: '950',
+                    color: '#0f172a',
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase',
+                    fontFamily: 'var(--font-display)',
+                    zIndex: 5
+                  }}>
+                    GAMES
+                  </div>
+
+                  {/* Corner aesthetic logos */}
+                  <div style={{ position: 'absolute', bottom: '10px', left: '16px', width: '24px', height: '24px', borderRadius: '50%', border: '1.5px solid #cbd5e1', background: 'rgba(0,0,0,0.02)', zIndex: 5 }} />
+                  <div style={{ position: 'absolute', bottom: '10px', right: '16px', width: '24px', height: '24px', borderRadius: '50%', border: '1.5px solid #cbd5e1', background: 'rgba(0,0,0,0.02)', zIndex: 5 }} />
                 </div>
               </div>
             </div>
+          </div>
+        </section>
 
-            {/* Physical metrics list */}
-            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <h4 style={{ fontSize: '0.85rem', color: '#06b6d4', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '5px' }}>Métricas Físicas</h4>
-              <dl style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '8px', margin: 0 }}>
-                <dt style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Altura:</dt>
-                <dd style={{ margin: 0, fontWeight: 'bold', fontSize: '0.85rem', color: '#fff', textAlign: 'right' }}>{athlete.height || "6'2\""}</dd>
-                
-                <dt style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Peso:</dt>
-                <dd style={{ margin: 0, fontWeight: 'bold', fontSize: '0.85rem', color: '#fff', textAlign: 'right' }}>{athlete.weight || "220 lbs"}</dd>
-                
-                <dt style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Envergadura:</dt>
-                <dd style={{ margin: 0, fontWeight: 'bold', fontSize: '0.85rem', color: '#fff', textAlign: 'right' }}>{athlete.wingspan || "75\""}</dd>
-                
-                <dt style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Tamanho da Mão:</dt>
-                <dd style={{ margin: 0, fontWeight: 'bold', fontSize: '0.85rem', color: '#fff', textAlign: 'right' }}>{athlete.handSize || "9.5\""}</dd>
-              </dl>
-            </div>
-          </aside>
-
-          {/* Column 2 (Center): Evolution timeline and training details */}
-          <main className="hud-panel-cut" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
-            {/* Timeline selector bar */}
-            <div>
-              <h3 style={{ fontSize: '1rem', color: '#06b6d4', marginBottom: '12px', borderBottom: '1px solid rgba(6,182,212,0.15)', paddingBottom: '6px' }}>PERFORMANCE TIMELINE</h3>
-              <div className="timeline-bar">
+        {/* Performance Dashboard Section */}
+        <section className="athlete-perf-grid" style={{
+          display: 'grid',
+          gridTemplateColumns: '1.3fr 0.7fr',
+          gap: '30px',
+          marginBottom: '50px',
+          alignItems: 'start'
+        }}>
+          {/* Performance Timeline Main Block */}
+          <div style={{
+            background: 'rgba(8, 12, 24, 0.95)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            borderRadius: '24px',
+            padding: '30px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.4)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '15px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', color: '#fff', letterSpacing: '1px', margin: 0 }}>TIMELINE DE PERFORMANCE</h3>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>MÉTRICAS ATIVAS EM TEMPO REAL</span>
+              </div>
+              
+              {/* Timeline selector bar */}
+              <div className="timeline-bar" style={{ margin: 0, display: 'flex', background: 'rgba(0,0,0,0.4)', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.06)', padding: '3px' }}>
                 {['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN'].map(month => (
                   <button
                     key={month}
                     className={`timeline-btn ${selectedMonth === month ? 'active' : ''}`}
                     onClick={() => setSelectedMonth(month)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      color: selectedMonth === month ? '#000' : 'rgba(255,255,255,0.6)',
+                      background: selectedMonth === month ? '#06b6d4' : 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
                   >
                     {month}
                   </button>
@@ -619,97 +1173,222 @@ export default function AthleteDashboard() {
               </div>
             </div>
 
-            {/* Big Numbers metrics derived from month */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '15px' }}>
+            {/* Grid of Dynamic Month Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '15px', marginBottom: '30px' }}>
               {getMonthStats().map((sum, index) => (
-                <div key={index} style={{ background: '#0b111e', borderLeft: '3px solid #06b6d4', padding: '12px 15px', borderRadius: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.2)' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>
+                <div key={index} style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  borderLeft: '4px solid #06b6d4',
+                  padding: '15px 20px',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>
                     {sum.label}
                   </div>
-                  <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '950', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
                     {sum.value}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Inline SVG Charts */}
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <h4 style={{ fontSize: '0.85rem', color: '#06b6d4', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Progressão de Volume de Treino</h4>
-              <div style={{ marginTop: '10px' }}>
-                {renderTimelineChart()}
-              </div>
+            {/* Chart container */}
+            <div style={{
+              background: 'rgba(0,0,0,0.2)',
+              padding: '20px',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.04)'
+            }}>
+              <h4 style={{ fontSize: '0.8rem', color: '#06b6d4', marginBottom: '15px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>
+                PROGRESSÃO DE VOLUME DE TREINAMENTO (SESSÕES)
+              </h4>
+              {renderTimelineChart()}
             </div>
+          </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '20px' }}>
-              
-              {/* Prescribed Training sessions */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <h4 style={{ fontSize: '0.85rem', color: '#06b6d4', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px', margin: 0 }}>TREINAMENTO ATIVO</h4>
-                
-                {workouts.length === 0 ? (
-                  <div style={{ padding: '15px 10px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', border: '1px dashed rgba(255,255,255,0.06)', textAlign: 'center' }}>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 10px 0' }}>Nenhum treino específico atribuído.</p>
-                    <Link href="/training" className="btn" style={{ fontSize: '0.75rem', padding: '6px 12px' }}>Ir para Treinamento</Link>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {workouts.slice(0, 2).map(w => (
-                      <div key={w.id} style={{ background: '#0b111e', border: '1px solid rgba(255,255,255,0.06)', padding: '12px', borderRadius: '6px', position: 'relative' }}>
-                        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '3px', background: '#06b6d4' }}></div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <strong style={{ fontSize: '0.85rem', display: 'block', color: '#fff' }}>PLANILHA DE TREINO</strong>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>PIN: {w.pinCode}</span>
-                          </div>
-                          <Link href={`/training?pin=${w.pinCode}`} className="btn" style={{ padding: '6px 10px', fontSize: '0.75rem', background: '#06b6d4', color: '#000', fontWeight: 'bold' }}>
-                            INICIAR ⚡
-                          </Link>
+          {/* Sidebar Block: active training & PRs */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+            
+            {/* Prescribed Training */}
+            <div style={{
+              background: 'rgba(8, 12, 24, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+              borderRadius: '24px',
+              padding: '25px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.4)'
+            }}>
+              <h4 style={{ fontSize: '0.85rem', color: '#06b6d4', textTransform: 'uppercase', letterSpacing: '1.5px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px', marginBottom: '15px', margin: 0 }}>
+                TREINAMENTO ATIVO
+              </h4>
+
+              {workouts.length === 0 ? (
+                <div style={{ padding: '20px 15px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.06)', textAlign: 'center' }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 15px 0' }}>Nenhum treino prescrito no momento.</p>
+                  <Link href="/training" className="btn" style={{ fontSize: '0.75rem', padding: '8px 16px', borderRadius: '20px', width: '100%', display: 'inline-block', textAlign: 'center' }}>
+                    Ir para Treinamento &rarr;
+                  </Link>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {workouts.slice(0, 3).map(w => (
+                    <div key={w.id} style={{
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      padding: '15px',
+                      borderRadius: '12px',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: '#06b6d4' }}></div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong style={{ fontSize: '0.8rem', display: 'block', color: '#fff', letterSpacing: '0.5px' }}>PLANILHA DE PERFORMANCE</strong>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>PIN: {w.pinCode}</span>
                         </div>
+                        <Link href={`/training?pin=${w.pinCode}`} style={{
+                          padding: '8px 14px',
+                          borderRadius: '8px',
+                          fontSize: '0.75rem',
+                          background: '#06b6d4',
+                          color: '#000',
+                          fontWeight: 'bold',
+                          textDecoration: 'none',
+                          boxShadow: '0 4px 10px rgba(6,182,212,0.3)',
+                          transition: 'transform 0.1s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                          INICIAR ⚡
+                        </Link>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Conquistador PR Records Panel */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <h4 style={{ fontSize: '0.85rem', color: '#06b6d4', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px', margin: 0 }}>REGISTRO PR</h4>
-                
-                <form onSubmit={handleAddPR} style={{ display: 'flex', gap: '5px', marginBottom: '8px' }}>
-                  <input required placeholder="Exercício" value={prExerciseName} onChange={e => setPrExerciseName(e.target.value)} style={{ flex: 1.8, padding: '6px 10px', background: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '4px', fontSize: '0.8rem' }} />
-                  <input required type="number" placeholder="Peso (kg)" value={prMaxLoad} onChange={e => setPrMaxLoad(e.target.value)} style={{ flex: 1.2, padding: '6px 5px', background: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'center' }} />
-                  <button type="submit" disabled={addingPR} className="btn" style={{ padding: '6px 8px', fontSize: '0.8rem', background: 'rgba(6, 182, 212, 0.1)', color: '#06b6d4', border: '1px solid #06b6d4' }}>
-                    +
-                  </button>
-                </form>
-
-                {prError && <p style={{ color: 'var(--accent-red)', fontSize: '0.75rem', margin: '0 0 5px 0' }}>{prError}</p>}
-
-                <div style={{ maxHeight: '90px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  {prs.map(pr => (
-                    <div key={pr.id} style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '6px 10px', borderRadius: '4px', borderLeft: '2.5px solid #06b6d4', fontSize: '0.8rem' }}>
-                      <span style={{ fontWeight: 'bold' }}>{pr.exerciseName}</span>
-                      <span style={{ color: '#00ffff', fontWeight: 'bold' }}>{pr.maxLoad} KG</span>
                     </div>
                   ))}
-                  {prs.length === 0 && (
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', textAlign: 'center', margin: '5px 0' }}>Nenhum recorde registrado.</p>
-                  )}
                 </div>
-              </div>
-
+              )}
             </div>
 
-          </main>
+            {/* PR Logger */}
+            <div style={{
+              background: 'rgba(8, 12, 24, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+              borderRadius: '24px',
+              padding: '25px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.4)'
+            }}>
+              <h4 style={{ fontSize: '0.85rem', color: '#06b6d4', textTransform: 'uppercase', letterSpacing: '1.5px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px', marginBottom: '15px', margin: 0 }}>
+                REGISTRO PR (POWER RECORDS)
+              </h4>
 
-          {/* Column 3 (Right): Attributes Radar Chart and Customize */}
-          <aside className="hud-panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <h3 style={{ fontSize: '1rem', color: '#06b6d4', borderBottom: '1px solid rgba(6,182,212,0.15)', paddingBottom: '8px', margin: 0 }}>ATRIBUTOS & TECH</h3>
+              <form onSubmit={handleAddPR} style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
+                <input
+                  required
+                  placeholder="Exercício"
+                  value={prExerciseName}
+                  onChange={e => setPrExerciseName(e.target.value)}
+                  style={{
+                    flex: 1.8,
+                    padding: '10px 12px',
+                    background: 'rgba(0,0,0,0.4)',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    outline: 'none'
+                  }}
+                />
+                <input
+                  required
+                  type="number"
+                  placeholder="KG"
+                  value={prMaxLoad}
+                  onChange={e => setPrMaxLoad(e.target.value)}
+                  style={{
+                    flex: 1.1,
+                    padding: '10px 8px',
+                    background: 'rgba(0,0,0,0.4)',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    textAlign: 'center',
+                    outline: 'none'
+                  }}
+                />
+                <button type="submit" disabled={addingPR} style={{
+                  padding: '10px 14px',
+                  background: 'rgba(6, 182, 212, 0.1)',
+                  color: '#06b6d4',
+                  border: '1px solid rgba(6, 182, 212, 0.4)',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#06b6d4'; e.currentTarget.style.color = '#000'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.1)'; e.currentTarget.style.color = '#06b6d4'; }}
+                >
+                  +
+                </button>
+              </form>
 
-            {/* Glowing SVG Radar Chart */}
-            <div style={{ display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-              <svg viewBox="0 0 200 200" style={{ width: '180px', height: '180px', overflow: 'visible' }}>
+              {prError && <p style={{ color: '#ef4444', fontSize: '0.75rem', margin: '-5px 0 10px 0' }}>{prError}</p>}
+
+              <div style={{ maxHeight: '140px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {prs.map(pr => (
+                  <div key={pr.id} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'rgba(255,255,255,0.01)',
+                    border: '1px solid rgba(255,255,255,0.03)',
+                    padding: '10px 15px',
+                    borderRadius: '8px',
+                    borderLeft: '3px solid #06b6d4',
+                    fontSize: '0.8rem'
+                  }}>
+                    <span style={{ fontWeight: 'bold', color: 'rgba(255,255,255,0.9)' }}>{pr.exerciseName}</span>
+                    <span style={{ color: '#00ffff', fontWeight: 'bold', letterSpacing: '0.5px' }}>{pr.maxLoad} KG</span>
+                  </div>
+                ))}
+                {prs.length === 0 && (
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', textAlign: 'center', margin: '10px 0' }}>Nenhum recorde registrado.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Attributes & Customization Base Block */}
+        <section className="athlete-attr-grid" style={{
+          display: 'grid',
+          gridTemplateColumns: '0.9fr 1.1fr',
+          gap: '30px',
+          alignItems: 'start'
+        }}>
+          
+          {/* Radar Attributes Deck */}
+          <div style={{
+            background: 'rgba(8, 12, 24, 0.95)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            borderRadius: '24px',
+            padding: '30px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            minHeight: '400px',
+            justifyContent: 'center'
+          }}>
+            <h3 style={{ fontSize: '1rem', color: '#06b6d4', letterSpacing: '1.5px', marginBottom: '25px', alignSelf: 'flex-start', margin: '0 0 20px 0' }}>
+              MATRIZ DE ATRIBUTOS TÁTICOS
+            </h3>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', position: 'relative', width: '100%', maxWidth: '240px' }}>
+              <svg viewBox="0 0 200 200" style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
                 {/* Background hexagons grid lines */}
                 {drawPentagon(0.2)}
                 {drawPentagon(0.4)}
@@ -789,12 +1468,29 @@ export default function AthleteDashboard() {
                 </div>
               )}
             </div>
+          </div>
 
-            {/* Theme & custom forms */}
-            <form onSubmit={handleSaveCustomization} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Customizer Control Panel */}
+          <div style={{
+            background: 'rgba(8, 12, 24, 0.95)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            borderRadius: '24px',
+            padding: '30px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
+          }}>
+            <h3 style={{ fontSize: '1rem', color: '#06b6d4', letterSpacing: '1.5px', margin: 0 }}>
+              PAINEL DE PERSONALIZAÇÃO COSMÉTICA
+            </h3>
+
+            <form onSubmit={handleSaveCustomization} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>Tema Dashboard</label>
-                <div style={{ display: 'flex', gap: '4px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                  TEMA DO DASHBOARD
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
                   {['midnight', 'cyberpunk', 'gold', 'emerald'].map(t => (
                     <button 
                       key={t}
@@ -802,15 +1498,17 @@ export default function AthleteDashboard() {
                       onClick={() => setThemeColor(t)}
                       style={{ 
                         flexGrow: 1, 
-                        padding: '6px 2px', 
+                        padding: '8px 4px', 
                         background: t === 'midnight' ? '#0f172a' : t === 'cyberpunk' ? '#2e0854' : t === 'gold' ? '#1c1500' : '#001f13', 
-                        border: themeColor === t ? '1.5px solid #06b6d4' : '1px solid #334155', 
-                        borderRadius: '4px', 
+                        border: themeColor === t ? '2px solid #06b6d4' : '1px solid rgba(255,255,255,0.1)', 
+                        borderRadius: '8px', 
                         cursor: 'pointer', 
                         color: '#fff', 
-                        fontSize: '0.7rem',
+                        fontSize: '0.75rem',
                         fontWeight: 'bold',
-                        textTransform: 'uppercase'
+                        textTransform: 'uppercase',
+                        boxShadow: themeColor === t ? '0 0 10px rgba(6,182,212,0.3)' : 'none',
+                        transition: 'all 0.2s'
                       }}
                     >
                       {t}
@@ -820,11 +1518,23 @@ export default function AthleteDashboard() {
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>Borda do Card</label>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                  ESTILO DA BORDA DO CARD
+                </label>
                 <select 
                   value={cardBorder} 
                   onChange={e => setCardBorder(e.target.value)} 
-                  style={{ width: '100%', padding: '8px', background: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '4px', fontSize: '0.8rem' }}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    background: 'rgba(0,0,0,0.4)',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
                 >
                   <option value="DEFAULT">Padrão</option>
                   <option value="GOLD">Gold Border (Ouro)</option>
@@ -838,26 +1548,44 @@ export default function AthleteDashboard() {
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>Foto (Link ou Upload)</label>
-                <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                  FOTO DE PERFIL (LINK OU UPLOAD LOCAL)
+                </label>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <input 
                     type="text" 
                     placeholder="https://exemplo.com/foto.jpg" 
                     value={profilePhoto && profilePhoto.startsWith('data:') ? 'Imagem Local (Base64)' : profilePhoto} 
                     onChange={e => setProfilePhoto(e.target.value)} 
-                    style={{ flexGrow: 1, padding: '8px', background: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '4px', fontSize: '0.8rem' }} 
+                    style={{
+                      flexGrow: 1,
+                      padding: '12px',
+                      background: 'rgba(0,0,0,0.4)',
+                      color: '#fff',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      outline: 'none'
+                    }} 
                   />
                   <label className="btn" style={{
-                    padding: '8px 10px',
-                    fontSize: '0.75rem',
+                    padding: '12px 16px',
+                    fontSize: '0.8rem',
                     whiteSpace: 'nowrap',
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '3px',
-                    margin: 0
-                  }}>
-                    📁 Upar
+                    gap: '6px',
+                    margin: 0,
+                    borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  >
+                    📁 UPAR
                     <input 
                       type="file" 
                       accept="image/*" 
@@ -868,19 +1596,501 @@ export default function AthleteDashboard() {
                 </div>
               </div>
 
-              {saveSuccess && <p style={{ color: 'var(--accent-green)', fontWeight: 'bold', fontSize: '0.8rem', margin: 0 }}>{saveSuccess}</p>}
+              {saveSuccess && (
+                <p style={{ color: '#22c55e', fontWeight: 'bold', fontSize: '0.8rem', margin: '5px 0 0 0' }}>
+                  {saveSuccess}
+                </p>
+              )}
 
-              <button type="submit" disabled={saving} className="btn" style={{ padding: '10px', width: '100%', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                {saving ? 'SALVANDO...' : 'SALVAR CUSTOMIZAÇÃO'}
-              </button>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                <button type="submit" disabled={saving} className="btn" style={{
+                  flex: 1,
+                  padding: '12px',
+                  fontSize: '0.85rem',
+                  fontWeight: 'bold',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'var(--primary-color)',
+                  color: '#000',
+                  cursor: 'pointer'
+                }}>
+                  {saving ? 'SALVANDO...' : 'SALVAR AJUSTES'}
+                </button>
+                
+                <button type="button" onClick={downloadCard} style={{
+                  flex: 1,
+                  padding: '12px',
+                  fontSize: '0.85rem',
+                  fontWeight: 'bold',
+                  borderRadius: '8px',
+                  border: '1px solid #06b6d4',
+                  background: 'rgba(6, 182, 212, 0.1)',
+                  color: '#06b6d4',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#06b6d4'; e.currentTarget.style.color = '#000'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.1)'; e.currentTarget.style.color = '#06b6d4'; }}
+                >
+                  📸 EXPORTAR PNG
+                </button>
+              </div>
             </form>
+          </div>
+        </section>
 
-            <button onClick={downloadCard} className="btn" style={{ background: '#06b6d4', color: '#000', fontWeight: 'bold', fontSize: '0.95rem', width: '100%', padding: '12px' }}>
-              📸 EXPORTAR CARD DUPLO PNG
-            </button>
-          </aside>
+        {/* TEAM HQ SECTION */}
+        {!teamLoading && team && (
+          <section style={{
+            background: 'rgba(8, 12, 24, 0.95)',
+            border: `1.5px solid ${team.primaryColor || '#06b6d4'}40`,
+            borderRadius: '24px',
+            padding: '30px',
+            boxShadow: `0 15px 35px rgba(0,0,0,0.5), 0 0 20px ${team.primaryColor || '#06b6d4'}15`,
+            marginTop: '40px',
+            marginBottom: '40px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            {/* Ambient Background Glow */}
+            <div style={{
+              position: 'absolute',
+              top: '-50px',
+              left: '-50px',
+              width: '200px',
+              height: '200px',
+              borderRadius: '50%',
+              background: `${team.primaryColor || '#f97316'}15`,
+              filter: 'blur(50px)',
+              pointerEvents: 'none',
+              zIndex: 1
+            }} />
 
-        </div>
+            <h3 style={{ 
+              fontSize: '1rem', 
+              color: team.primaryColor || '#06b6d4', 
+              letterSpacing: '1.5px', 
+              textTransform: 'uppercase', 
+              margin: '0 0 25px 0',
+              fontWeight: '800',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              zIndex: 2,
+              position: 'relative'
+            }}>
+              <span>🛡️</span> TEAM HQ // SEDE DO TIME
+            </h3>
+
+            {/* Asymmetric Split Layout */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '180px 1fr', 
+              gap: '40px', 
+              alignItems: 'center',
+              zIndex: 2,
+              position: 'relative'
+            }}>
+              {/* Left Column: Crest */}
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                {team.logoUrl ? (
+                  <img 
+                    src={team.logoUrl} 
+                    alt={team.name} 
+                    style={{
+                      width: '180px',
+                      height: '180px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: `4px solid ${team.primaryColor || '#f97316'}`,
+                      boxShadow: `0 0 25px ${team.primaryColor || '#f97316'}40`,
+                      backgroundColor: '#0a0f1d'
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '180px',
+                    height: '180px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: `4px solid ${team.primaryColor || '#f97316'}`,
+                    boxShadow: `0 0 25px ${team.primaryColor || '#f97316'}40`,
+                    background: 'radial-gradient(circle, #1e293b 0%, #0f172a 100%)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', padding: '15px' }}>
+                      <defs>
+                        <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor={team.primaryColor || '#f97316'} />
+                          <stop offset="100%" stopColor="#0a0a0a" />
+                        </linearGradient>
+                      </defs>
+                      <path 
+                        d="M50 10 L80 25 L80 60 C80 80 50 90 50 90 C50 90 20 80 20 60 L20 25 Z" 
+                        fill="url(#shieldGrad)" 
+                        stroke={team.primaryColor || '#f97316'} 
+                        strokeWidth="2"
+                      />
+                      <text 
+                        x="50" 
+                        y="58" 
+                        fontFamily="var(--font-display)" 
+                        fontSize="24" 
+                        fontWeight="900" 
+                        fill="#ffffff" 
+                        textAnchor="middle"
+                        style={{ letterSpacing: '1px', textShadow: '0 4px 8px rgba(0,0,0,0.5)' }}
+                      >
+                        {team.abbreviation || team.name.substring(0, 2).toUpperCase()}
+                      </text>
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Name, Stats, Button */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
+                    <h2 style={{ 
+                      fontSize: '2.5rem', 
+                      fontFamily: 'var(--font-display)', 
+                      margin: 0, 
+                      textTransform: 'uppercase',
+                      color: '#fff',
+                      lineHeight: '1',
+                      textShadow: `0 0 15px ${team.primaryColor || '#f97316'}20`
+                    }}>
+                      {team.name}
+                    </h2>
+                    <span style={{ 
+                      background: `${team.primaryColor || '#f97316'}20`, 
+                      border: `1px solid ${team.primaryColor || '#f97316'}`, 
+                      color: team.primaryColor || '#f97316',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '0.8rem',
+                      fontWeight: 'bold',
+                      fontFamily: 'var(--font-display)'
+                    }}>
+                      {team.abbreviation}
+                    </span>
+                    {team.founded && (
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        EST. {team.founded}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Statistics Grid */}
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(4, 1fr)', 
+                  gap: '15px', 
+                  margin: '10px 0' 
+                }}>
+                  <div style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderLeft: '4px solid #22c55e',
+                    padding: '15px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                  }}>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '5px' }}>
+                      Vitórias
+                    </div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: '950', color: '#fff' }}>
+                      {team.wins}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderLeft: '4px solid #ef4444',
+                    padding: '15px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                  }}>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '5px' }}>
+                      Derrotas
+                    </div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: '950', color: '#fff' }}>
+                      {team.losses}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderLeft: '4px solid #94a3b8',
+                    padding: '15px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                  }}>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '5px' }}>
+                      Empates
+                    </div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: '950', color: '#fff' }}>
+                      {team.draws}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderLeft: `4px solid ${team.primaryColor || '#f97316'}`,
+                    padding: '15px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                  }}>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '5px' }}>
+                      Aproveitamento
+                    </div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: '950', color: '#fff' }}>
+                      {Math.round((team.wins / (team.wins + team.losses + team.draws || 1)) * 100)}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* Toggle Story Button */}
+                {team.history && (
+                  <div style={{ alignSelf: 'flex-start' }}>
+                    <button 
+                      type="button"
+                      onClick={() => setShowTeamHistory(true)}
+                      className="btn" 
+                      style={{
+                        padding: '10px 20px',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        borderRadius: '8px',
+                        border: `1.5px solid ${team.primaryColor || '#f97316'}`,
+                        background: 'transparent',
+                        color: team.primaryColor || '#f97316',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = team.primaryColor || '#f97316';
+                        e.currentTarget.style.color = '#000';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = team.primaryColor || '#f97316';
+                      }}
+                    >
+                      📖 VER HISTÓRIA DO TIME
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Teammates section */}
+            <div style={{ marginTop: '35px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
+              <h4 style={{ 
+                fontSize: '0.8rem', 
+                color: 'var(--text-secondary)', 
+                textTransform: 'uppercase', 
+                letterSpacing: '1px', 
+                margin: '0 0 15px 0' 
+              }}>
+                🛡️ Elenco Ativo / Colegas de Equipe ({team.athletes ? team.athletes.length : 0})
+              </h4>
+              
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                {team.athletes && team.athletes.map(ta => (
+                  <Link 
+                    href={`/athlete/${ta.id}`} 
+                    key={ta.id}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <div 
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        background: ta.id === id ? `${team.primaryColor}20` : 'rgba(255,255,255,0.03)',
+                        border: ta.id === id ? `1.5px solid ${team.primaryColor}` : '1.5px solid rgba(255,255,255,0.06)',
+                        padding: '8px 14px',
+                        borderRadius: '12px',
+                        transition: 'all 0.2s',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = ta.id === id ? `${team.primaryColor}20` : 'rgba(255,255,255,0.03)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      {ta.profilePhoto ? (
+                        <img 
+                          src={ta.profilePhoto} 
+                          alt={ta.name} 
+                          style={{ 
+                            width: '30px', 
+                            height: '30px', 
+                            borderRadius: '50%', 
+                            objectFit: 'cover', 
+                            border: ta.isMVP ? '2.5px solid #fbbf24' : `1.5px solid ${team.primaryColor}80` 
+                          }}
+                        />
+                      ) : (
+                        <div style={{ 
+                          width: '30px', 
+                          height: '30px', 
+                          borderRadius: '50%', 
+                          background: team.primaryColor || '#f97316', 
+                          color: '#000', 
+                          fontSize: '0.7rem', 
+                          fontWeight: '950', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center' 
+                        }}>
+                          {ta.name.substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#fff' }}>
+                          {ta.name} {ta.isMVP && '⭐'}
+                        </div>
+                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)' }}>
+                          {ta.position} • OVR {ta.overall}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* TEAM HISTORY MODAL */}
+        {showTeamHistory && team && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(5, 8, 20, 0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}>
+            <div style={{
+              background: '#090e1a',
+              border: `2px solid ${team.primaryColor || '#f97316'}`,
+              borderRadius: '24px',
+              width: '100%',
+              maxWidth: '600px',
+              boxShadow: `0 0 50px ${team.primaryColor || '#f97316'}30`,
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Header */}
+              <div style={{
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                padding: '25px 30px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.5rem' }}>🛡️</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', textTransform: 'uppercase', color: '#fff' }}>
+                      {team.name}
+                    </h3>
+                    <span style={{ fontSize: '0.7rem', color: team.primaryColor || '#f97316', fontWeight: 'bold', letterSpacing: '1px' }}>
+                      HISTÓRIA & LEGENDA
+                    </span>
+                  </div>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setShowTeamHistory(false)}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Body */}
+              <div style={{ padding: '30px', maxHeight: '400px', overflowY: 'auto' }}>
+                <p style={{
+                  color: 'rgba(255,255,255,0.85)',
+                  fontSize: '0.95rem',
+                  lineHeight: '1.6',
+                  whiteSpace: 'pre-wrap',
+                  margin: 0
+                }}>
+                  {team.history}
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div style={{
+                borderTop: '1px solid rgba(255,255,255,0.06)',
+                padding: '20px 30px',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                background: 'rgba(0,0,0,0.2)'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setShowTeamHistory(false)}
+                  className="btn"
+                  style={{
+                    padding: '8px 20px',
+                    fontSize: '0.8rem',
+                    fontWeight: 'bold',
+                    borderRadius: '8px',
+                    background: team.primaryColor || '#f97316',
+                    border: 'none',
+                    color: '#000',
+                    cursor: 'pointer'
+                  }}
+                >
+                  FECHAR
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 

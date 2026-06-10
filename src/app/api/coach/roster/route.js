@@ -9,22 +9,84 @@ export async function GET(request) {
     
     const filter = coachId ? { coachId } : {};
     
+    // Consulta 1: Busca os atletas omitindo senhas/hashes
     const athletes = await prisma.athlete.findMany({
       where: filter,
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        position: true,
+        overall: true,
+        attendanceCount: true,
+        prCount: true,
+        themeColor: true,
+        profilePhoto: true,
+        cardBorder: true,
+        isMVP: true,
+        height: true,
+        weight: true,
+        wingspan: true,
+        handSize: true,
+        forceAttr: true,
+        skillAttr: true,
+        evolutionAttr: true,
+        speedAttr: true,
+        powerAttr: true,
+        coachId: true
+      }
     });
 
-    const athletesWithACWR = await Promise.all(athletes.map(async (athlete) => {
-      // Busca treinos dos últimos 28 dias
-      const dateLimit = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
-      const workouts = await prisma.workout.findMany({
-        where: {
-          athleteId: athlete.id,
-          date: { gte: dateLimit }
-        },
-        include: { sets: true }
-      });
+    if (athletes.length === 0) {
+      return NextResponse.json({ success: true, athletes: [] });
+    }
 
+    const athleteIds = athletes.map(a => a.id);
+    const dateLimit = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+
+    // Consulta 2: Busca todos os treinos recentes e suas séries em uma única query
+    const allWorkouts = await prisma.workout.findMany({
+      where: {
+        athleteId: { in: athleteIds },
+        date: { gte: dateLimit }
+      },
+      include: { sets: true }
+    });
+
+    // Agrupa os treinos por id do atleta
+    const workoutsByAthlete = {};
+    athleteIds.forEach(id => {
+      workoutsByAthlete[id] = [];
+    });
+    allWorkouts.forEach(w => {
+      if (w.athleteId) {
+        workoutsByAthlete[w.athleteId].push(w);
+      }
+    });
+
+    // Consulta 3: Agrupa as contagens de recordes pessoais (PRs) em uma única query
+    const prCounts = await prisma.pRRecord.groupBy({
+      by: ['athleteId'],
+      _count: {
+        _all: true
+      },
+      where: {
+        athleteId: { in: athleteIds }
+      }
+    });
+
+    const prCountMap = {};
+    athleteIds.forEach(id => {
+      prCountMap[id] = 0;
+    });
+    prCounts.forEach(item => {
+      prCountMap[item.athleteId] = item._count._all;
+    });
+
+    // Faz as contas de ACWR em memória
+    const athletesWithACWR = athletes.map(athlete => {
+      const workouts = workoutsByAthlete[athlete.id] || [];
       let acuteWorkload = 0;
       let chronicWorkloadSum = 0;
       
@@ -32,14 +94,13 @@ export async function GET(request) {
       const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
 
       workouts.forEach(w => {
-        // Calcula carga do treino: Soma de (Carga Real ou Alvo) * Repetições
         let workoutWorkload = 0;
         w.sets.forEach(s => {
           const load = s.actualLoad || s.targetLoad || 1.0;
           workoutWorkload += load * s.targetReps;
         });
 
-        if (workoutWorkload === 0) workoutWorkload = 100.0; // Carga padrão de fallback
+        if (workoutWorkload === 0) workoutWorkload = 100.0;
 
         if (new Date(w.date).getTime() >= sevenDaysAgo) {
           acuteWorkload += workoutWorkload;
@@ -52,20 +113,15 @@ export async function GET(request) {
       if (chronicWorkload > 0) {
         acwr = parseFloat((acuteWorkload / chronicWorkload).toFixed(2));
       } else if (acuteWorkload > 0) {
-        acwr = 1.0; // Fallback se o atleta acabou de começar o ciclo esta semana
+        acwr = 1.0;
       }
-
-      // Totaliza os recordes pessoais ativos
-      const prsCount = await prisma.pRRecord.count({
-        where: { athleteId: athlete.id }
-      });
 
       return {
         ...athlete,
         acwr,
-        prCount: prsCount
+        prCount: prCountMap[athlete.id] || 0
       };
-    }));
+    });
 
     return NextResponse.json({ success: true, athletes: athletesWithACWR });
   } catch (error) {
@@ -173,3 +229,55 @@ export async function PUT(request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+// Exclui um atleta e todas as suas informações associadas de forma segura em transação
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'ID do atleta ausente.' }, { status: 400 });
+    }
+
+    // 1. Busca os treinos para poder excluir os WorkoutSets correspondentes
+    const workouts = await prisma.workout.findMany({
+      where: { athleteId: id },
+      select: { id: true }
+    });
+    const workoutIds = workouts.map(w => w.id);
+
+    // Executa as exclusões em transação para evitar órfãos e violação de FK
+    await prisma.$transaction([
+      // A. Exclui WorkoutSet dos treinos do atleta
+      prisma.workoutSet.deleteMany({
+        where: { workoutId: { in: workoutIds } }
+      }),
+      // B. Exclui os treinos do atleta
+      prisma.workout.deleteMany({
+        where: { athleteId: id }
+      }),
+      // C. Exclui feedbacks de jogadas
+      prisma.playFeedback.deleteMany({
+        where: { athleteId: id }
+      }),
+      // D. Exclui convites/designações de jogadas
+      prisma.playAssignment.deleteMany({
+        where: { athleteId: id }
+      }),
+      // E. Exclui recordes pessoais (PRs)
+      prisma.pRRecord.deleteMany({
+        where: { athleteId: id }
+      }),
+      // F. Exclui o atleta
+      prisma.athlete.delete({
+        where: { id }
+      })
+    ]);
+
+    return NextResponse.json({ success: true, message: 'Atleta e dados relacionados excluídos com sucesso.' });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+

@@ -200,6 +200,29 @@ function LockerContent() {
     }
   };
 
+  const athlete = workout?.athlete || athleteData || {
+    name: 'Atleta',
+    position: 'DL',
+    overall: 70,
+    attendanceCount: 0,
+    personalRecords: [],
+    themeColor: 'midnight',
+    cardBorder: 'DEFAULT',
+    profilePhoto: ''
+  };
+
+  const getCardBorderStyle = () => {
+    const border = athlete?.cardBorder || 'DEFAULT';
+    switch (border) {
+      case 'GOLD': return { border: '4px solid #eab308', boxShadow: '0 0 20px rgba(234,179,8,0.4)' };
+      case 'HOLO': return { border: '4px solid #c084fc', boxShadow: '0 0 20px rgba(192,132,252,0.4)' };
+      case 'OBSIDIAN': return { border: '4px solid #f97316', boxShadow: '0 0 20px rgba(249,115,22,0.4)' };
+      case 'EMERALD': return { border: '4px solid #10b981', boxShadow: '0 0 20px rgba(16,185,129,0.4)' };
+      case 'HISTORIC': return { border: '5px double #facc15', boxShadow: '0 0 35px rgba(250,204,21,0.6)', background: 'linear-gradient(135deg, #000 0%, #1a1505 100%)' };
+      default: return { border: '2px solid rgba(255,255,255,0.1)' };
+    }
+  };
+
   const downloadCard = async () => {
     if (!cardRef.current) return;
     try {
@@ -238,53 +261,357 @@ function LockerContent() {
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             onClick={handleCardClick}
-            style={{ perspective: '1000px', cursor: 'pointer' }}
+            style={{ 
+              perspective: '1000px', 
+              cursor: 'pointer',
+              width: '300px',
+              height: '440px',
+              margin: '0 auto',
+              position: 'relative'
+            }}
           >
-            <div className="card-inner">
+            <div className="card-inner" style={{ transition: 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transformStyle: 'preserve-3d', width: '100%', height: '100%' }}>
               
-              {/* FRENTE */}
-              <div className={`card-front ${getCardBorderClass(athleteData?.cardBorder)}`}>
-                <div className="ovr-badge">{athleteData?.overall || '94'}</div>
-                <div className="front-header">
-                  <div className="front-title">{athleteData?.name?.toUpperCase() || 'RAFAEL S.'}</div>
-                </div>
-                <div className="front-body">
-                  <div className="side-text">{athleteData?.position || 'OFFENSIVE LINEMAN'}</div>
-                  {athleteData?.profilePhoto ? (
+              {/* FRONT CARD (Jinx / Lorcana style in Image 3) */}
+              <div 
+                className={`card-front ${getCardBorderClass(athlete.cardBorder)}`} 
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  justifyContent: 'space-between', 
+                  height: '100%', 
+                  position: 'absolute', 
+                  width: '100%', 
+                  backfaceVisibility: 'hidden', 
+                  overflow: 'hidden',
+                  ...getCardBorderStyle() 
+                }}
+              >
+                {/* Full-bleed Portrait Background */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1, overflow: 'hidden' }}>
+                  {athlete.profilePhoto ? (
                     <img 
-                      src={athleteData.profilePhoto} 
-                      alt={athleteData.name} 
-                      style={{ width: '180px', height: '180px', borderRadius: '10px', objectFit: 'cover', border: '3px solid var(--primary-color)', boxShadow: '0 10px 20px rgba(0,0,0,0.5)', zIndex: 2 }} 
+                      src={athlete.profilePhoto} 
+                      alt={athlete.name} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                     />
                   ) : (
-                    <div className="player-image-placeholder"></div>
+                    <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: '3rem', opacity: 0.15 }}>🛡️</span>
+                    </div>
                   )}
+                  {/* Shadow overlay gradient to enhance readability */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'linear-gradient(to top, rgba(2, 6, 23, 0.95) 0%, rgba(2, 6, 23, 0.4) 40%, rgba(2, 6, 23, 0.25) 100%)',
+                    zIndex: 2
+                  }} />
                 </div>
-                <div className="front-footer">
-                  <div className="nameplate"><span>THE WALL</span></div>
-                  <div className="team-logo">{athleteData?.position || 'OL'}</div>
+
+                {/* Inner Gold Frame Border */}
+                <div style={{
+                  position: 'absolute',
+                  top: '12px', left: '12px', right: '12px', bottom: '12px',
+                  border: '2px solid rgba(251, 191, 36, 0.45)',
+                  borderRadius: '12px',
+                  zIndex: 2,
+                  pointerEvents: 'none'
+                }} />
+
+                {/* Left-top vertical circle badges */}
+                <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 5 }}>
+                  {/* Circle 1: Position Badge */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#ef4444',
+                    color: '#fff',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    fontSize: '0.7rem',
+                    fontWeight: '950',
+                    border: '1.5px solid #fff',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.3)'
+                  }}>
+                    {athlete.position || 'DL'}
+                  </div>
+
+                  {/* Circle 2: Sport Category Icon */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#8b5cf6',
+                    color: '#fff',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    fontSize: '0.65rem',
+                    fontWeight: '900',
+                    border: '1.5px solid #fff',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.3)'
+                  }}>
+                    {athlete.position === 'Força Base' ? 'PL' : (athlete.position === 'Forwards' || athlete.position === 'Backs' ? 'RG' : 'FA')}
+                  </div>
+                </div>
+
+                {/* Top-right overall rating */}
+                <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 5 }}>
+                  <span style={{
+                    fontSize: '1.7rem',
+                    fontWeight: '950',
+                    color: '#fff',
+                    textShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(6,182,212,0.3)'
+                  }}>
+                    {athlete.overall}
+                  </span>
+                </div>
+
+                {/* Player Name Tag (Positioned right above the main title band) */}
+                <div style={{
+                  position: 'absolute',
+                  top: '235px',
+                  left: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  zIndex: 5
+                }}>
+                  <span style={{
+                    background: '#fbbf24',
+                    color: '#000',
+                    fontSize: '0.55rem',
+                    fontWeight: '900',
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase'
+                  }}>
+                    {athlete.overall >= 90 ? 'MYTHIC' : athlete.overall >= 80 ? 'EPIC' : 'LEGEND'}
+                  </span>
+                  <span style={{
+                    color: '#fff',
+                    fontSize: '0.95rem',
+                    fontWeight: '900',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {athlete.name?.toUpperCase()}
+                  </span>
+                </div>
+
+                {/* Classification Title Band */}
+                <div style={{
+                  position: 'absolute',
+                  top: '260px',
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.9) 0%, rgba(109, 40, 217, 0.75) 100%)',
+                  borderTop: '1px solid rgba(255,255,255,0.15)',
+                  borderBottom: '1px solid rgba(255,255,255,0.15)',
+                  padding: '5px 20px',
+                  zIndex: 4,
+                  display: 'flex',
+                  alignItems: 'center'
+                }}>
+                  <span style={{
+                    color: '#fff',
+                    fontSize: '1rem',
+                    fontWeight: '900',
+                    fontFamily: 'var(--font-display)',
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase'
+                  }}>
+                    {athlete.position === 'DL' ? 'Muralha de Trincheira' : athlete.position === 'QB' ? 'Lançador de Elite' : 'Estilo Lendário'}
+                  </span>
+                </div>
+
+                {/* Lore Description Box at bottom */}
+                <div style={{
+                  position: 'absolute',
+                  top: '300px',
+                  left: '20px',
+                  right: '20px',
+                  bottom: '20px',
+                  background: 'rgba(2, 6, 23, 0.75)',
+                  backdropFilter: 'blur(4px)',
+                  border: '1.5px solid rgba(255,255,255,0.08)',
+                  borderRadius: '8px',
+                  padding: '8px 10px',
+                  zIndex: 4,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  textAlign: 'center'
+                }}>
+                  <p style={{
+                    margin: 0,
+                    color: 'rgba(255,255,255,0.85)',
+                    fontSize: '0.7rem',
+                    lineHeight: '1.3',
+                    fontStyle: 'italic',
+                    fontFamily: 'var(--font-base)'
+                  }}>
+                    {athlete.position === 'DL' ? '"Força explosiva na trincheira. Ao iniciar o Scrimmage, ganha +15 de potência concêntrica de quadril."' : 
+                     athlete.position === 'QB' ? '"Precisão milimétrica e leitura rápida de rotas. Lança passes perfeitos superando a cobertura."' :
+                     '"Atleta de alto rendimento treinado nos programas de elite da Ascend Athletics."'}
+                  </p>
+                </div>
+
+                {/* Center Gem on frame border */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '6px',
+                  left: '50%',
+                  width: '8px',
+                  height: '8px',
+                  background: '#a855f7',
+                  border: '1px solid #fff',
+                  transform: 'translateX(-50%) rotate(45deg)',
+                  boxShadow: '0 0 6px #a855f7',
+                  zIndex: 10
+                }} />
+
+                {/* Bottom info tags */}
+                <div style={{ position: 'absolute', bottom: '4px', left: '16px', fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', zIndex: 10 }}>
+                  ASC - {athlete.overall}/99
+                </div>
+                <div style={{ position: 'absolute', bottom: '4px', right: '16px', fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', zIndex: 10 }}>
+                  ⚡ 2026 ASCEND
                 </div>
               </div>
 
-              {/* VERSO CONECTADO AO BANCO */}
-              <div className={`card-back ${getCardBorderClass(athleteData?.cardBorder)}`}>
-                <div className="back-header">
-                  <div className="back-subtitle">Training Prescription</div>
-                  <div className="back-title">WORKOUT MVP</div>
+              {/* BACK CARD (Ryu / Street Fighter style in Image 4) */}
+              <div 
+                className={`card-back ${getCardBorderClass(athlete.cardBorder)}`} 
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  justifyContent: 'space-between', 
+                  height: '100%', 
+                  position: 'absolute', 
+                  width: '100%', 
+                  backfaceVisibility: 'hidden', 
+                  transform: 'rotateY(180deg)',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                  backgroundImage: 'radial-gradient(circle at center, transparent 30%, rgba(148, 163, 184, 0.08) 31%), repeating-conic-gradient(from 0deg, transparent 0deg 10deg, rgba(148, 163, 184, 0.05) 10deg 20deg)',
+                  border: '4px solid #475569',
+                  borderRadius: '15px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
+                }}
+              >
+                {/* Top Left OVR badge */}
+                <div style={{
+                  position: 'absolute',
+                  top: '12px',
+                  left: '12px',
+                  background: '#1e293b',
+                  color: '#fff',
+                  padding: '3px 10px',
+                  borderRadius: '6px',
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: '950',
+                  fontSize: '1.15rem',
+                  border: '1.5px solid #fff',
+                  boxShadow: '0 3px 6px rgba(0,0,0,0.15)',
+                  zIndex: 5
+                }}>
+                  {athlete.overall}
                 </div>
-                <div className="workout-stats">
-                  {workout.sets.map(set => (
-                    <div className="stat-row" key={set.id}>
-                      <span className="stat-name">{set.exerciseName}</span>
-                      <span className="stat-value">{set.targetSets}x{set.targetReps}</span>
-                    </div>
-                  ))}
-                  <div className="stat-row" style={{ borderLeftColor: '#22c55e' }}>
-                    <span className="stat-name">Missão</span>
-                    <span className="stat-value" style={{ color: '#22c55e' }}>CONCLUÍDA</span>
+
+                {/* Top Right Header Nameplate */}
+                <div style={{ position: 'absolute', top: '12px', right: '16px', textAlign: 'right', zIndex: 5 }}>
+                  <div style={{ fontSize: '1.1rem', fontWeight: '950', color: '#0f172a', textTransform: 'uppercase', lineHeight: '1', fontFamily: 'var(--font-display)' }}>
+                    {athlete.name?.split(' ')[0]}
+                  </div>
+                  <div style={{ fontSize: '0.55rem', fontWeight: '800', color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', marginTop: '2px' }}>
+                    ASCEND ATHLETICS
                   </div>
                 </div>
-                <div className="back-footer">COACH: {workout.coach?.name || 'APPROVED'}</div>
+
+                {/* Middle Area bordered polygon segment */}
+                <div style={{
+                  position: 'absolute',
+                  top: '52px',
+                  left: '16px',
+                  right: '16px',
+                  height: '315px',
+                  background: '#ffffff',
+                  border: '2.5px solid #0f172a',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 6px 12px rgba(0,0,0,0.04)',
+                  zIndex: 4
+                }}>
+                  {/* Bio Text */}
+                  <p style={{
+                    margin: 0,
+                    color: '#334155',
+                    fontSize: '0.68rem',
+                    lineHeight: '1.35',
+                    fontWeight: '700',
+                    textAlign: 'justify',
+                    fontFamily: 'sans-serif'
+                  }}>
+                    Nascido para dominar as trincheiras físicas e táticas do time, {athlete.name?.split(' ')[0]} realiza uma periodização constante sob a liderança de seu Coach para elevar o nível de OVR. Atleta de alto rendimento focado em consistência e PRs.
+                  </p>
+
+                  {/* Stats details list inside the polygon */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    borderTop: '1.5px dashed #cbd5e1',
+                    paddingTop: '10px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>TREINO DO DIA</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: '900', color: '#0f172a' }}>MVP</span>
+                    </div>
+
+                    {/* Workout sets preview */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px', maxHeight: '160px', overflowY: 'auto' }}>
+                      {workout.sets.map((set, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '4px 8px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '0.62rem', fontWeight: '700', color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>{set.exerciseName}</span>
+                          <span style={{ fontSize: '0.65rem', fontWeight: '900', color: '#10b981' }}>{set.targetSets}x{set.targetReps}</span>
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f0fdf4', padding: '4px 8px', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
+                        <span style={{ fontSize: '0.62rem', fontWeight: '700', color: '#166534' }}>Missão</span>
+                        <span style={{ fontSize: '0.65rem', fontWeight: '900', color: '#15803d' }}>CONCLUÍDA</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Banner GAMES */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '12px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  fontSize: '1.25rem',
+                  fontWeight: '950',
+                  color: '#0f172a',
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                  fontFamily: 'var(--font-display)',
+                  zIndex: 5
+                }}>
+                  GAMES
+                </div>
+
+                {/* Corner aesthetic logos */}
+                <div style={{ position: 'absolute', bottom: '10px', left: '16px', width: '24px', height: '24px', borderRadius: '50%', border: '1.5px solid #cbd5e1', background: 'rgba(0,0,0,0.02)', zIndex: 5 }} />
+                <div style={{ position: 'absolute', bottom: '10px', right: '16px', width: '24px', height: '24px', borderRadius: '50%', border: '1.5px solid #cbd5e1', background: 'rgba(0,0,0,0.02)', zIndex: 5 }} />
               </div>
 
             </div>

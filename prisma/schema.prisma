@@ -17,7 +17,26 @@ model Coach {
   athletes  Athlete[]
   workouts  Workout[]
   plays     Play[]
+  team      Team?
 }
+
+model Team {
+  id                String   @id @default(cuid())
+  name              String
+  abbreviation      String   @default("AA")
+  logoUrl           String?          // URL ou Base64 do brasão do time
+  primaryColor      String   @default("#f97316")
+  history           String?          // Texto com a história do time
+  wins              Int      @default(0)
+  losses            Int      @default(0)
+  draws             Int      @default(0)
+  founded           String?          // Ano de fundação
+  trainingFrequency String   @default("3x por semana")
+  championships     Int      @default(0)
+  coachId           String   @unique
+  coach             Coach    @relation(fields: [coachId], references: [id])
+}
+
 
 model Athlete {
   id              String       @id @default(cuid())
