@@ -25,6 +25,10 @@ export async function POST(request) {
         type: data.type,
         location: data.location,
         description: data.description || null,
+        mechanics: data.mechanics || null,
+        imageUrl: data.imageUrl || null,
+        gifUrl: data.gifUrl || null,
+        videoUrl: data.videoUrl || null,
         mediaUrl: data.mediaUrl || null
       }
     });

@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import html2canvas from 'html2canvas';
 import TacticalDashboard from '@/components/TacticalDashboard';
+import AthleteNavbar from '@/components/athlete/AthleteNavbar';
 
 export default function AthleteDashboard() {
   const params = useParams();
@@ -23,6 +24,7 @@ export default function AthleteDashboard() {
   const [themeColor, setThemeColor] = useState('midnight'); // midnight, cyberpunk, gold, emerald
   const [profilePhoto, setProfilePhoto] = useState('');
   const [cardBorder, setCardBorder] = useState('DEFAULT'); // DEFAULT, GOLD, HOLO, OBSIDIAN, EMERALD, HISTORIC
+  const [highlightsUrls, setHighlightsUrls] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState('');
 
@@ -120,6 +122,11 @@ export default function AthleteDashboard() {
         setThemeColor(data.athlete.themeColor || 'midnight');
         setProfilePhoto(data.athlete.profilePhoto || '');
         setCardBorder(data.athlete.cardBorder || 'DEFAULT');
+        try {
+          setHighlightsUrls(data.athlete.highlights ? JSON.parse(data.athlete.highlights).join('\n') : '');
+        } catch(e) {
+          setHighlightsUrls('');
+        }
       } else {
         setError(data.error || 'Erro ao carregar dados do atleta.');
       }
@@ -149,10 +156,17 @@ export default function AthleteDashboard() {
     setSaving(true);
     setSaveSuccess('');
     try {
+      const payload = { 
+        themeColor, 
+        profilePhoto, 
+        cardBorder, 
+        highlights: JSON.stringify(highlightsUrls.split('\n').map(u => u.trim()).filter(u => u !== '')) 
+      };
+
       const res = await fetch(`/api/athlete/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ themeColor, profilePhoto, cardBorder })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
@@ -477,6 +491,8 @@ export default function AthleteDashboard() {
   return (
     <div style={{ background: getThemeBackground(), minHeight: '100vh', transition: 'background 0.5s ease', paddingBottom: '80px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
       
+      <AthleteNavbar athleteId={id} />
+
       {/* Symmetrical Sided Team Logo Watermark (Personal per Team) */}
       {team && team.logoUrl && (
         <div style={{
@@ -555,69 +571,7 @@ export default function AthleteDashboard() {
 
       <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', position: 'relative', zIndex: 2 }}>
         
-        {/* Navbar */}
-        <nav style={{
-          padding: '24px 0',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '30px'
-        }}>
-          <div>
-            <h2 style={{
-              color: '#fff',
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.8rem',
-              fontWeight: '900',
-              letterSpacing: '2px',
-              margin: 0,
-              textShadow: '0 0 15px rgba(255,255,255,0.1)'
-            }}>
-              ASCEND <span style={{ color: '#06b6d4' }}>ATHLETICS</span>
-            </h2>
-            <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.8rem', letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginTop: '2px' }}>
-              Locker Room HUD &bull; {athlete.position === 'Força Base' ? 'Powerlifting' : (athlete.position === 'Forwards' || athlete.position === 'Backs' ? 'Rugby' : 'Futebol Americano')}
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <Link href="/" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.85rem', letterSpacing: '1px', textTransform: 'uppercase', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = '#06b6d4'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.7)'}>
-              &larr; Voltar para Home
-            </Link>
-            <button 
-              onClick={async () => {
-                localStorage.removeItem('athlete');
-                try {
-                  await fetch('/api/auth/logout', { method: 'POST' });
-                } catch (e) {}
-                window.location.href = '/athlete/login';
-              }} 
-              style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '20px',
-                color: '#ef4444',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                fontSize: '0.8rem',
-                padding: '8px 16px',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => {
-                e.target.style.background = 'rgba(239, 68, 68, 0.2)';
-                e.target.style.borderColor = '#ef4444';
-              }}
-              onMouseLeave={e => {
-                e.target.style.background = 'rgba(239, 68, 68, 0.1)';
-                e.target.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-              }}
-            >
-              Sair
-            </button>
-          </div>
-        </nav>
+
 
         {/* Banner MVP (Premium Ribbon) */}
         {mvp && mvp.id === athlete.id && (
@@ -1594,6 +1548,29 @@ export default function AthleteDashboard() {
                     />
                   </label>
                 </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                  MEUS HIGHLIGHTS (URLs dos vídeos - 1 por linha)
+                </label>
+                <textarea 
+                  placeholder="https://youtube.com/watch?v=...\nhttps://hudl.com/v/..." 
+                  value={highlightsUrls} 
+                  onChange={e => setHighlightsUrls(e.target.value)} 
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    background: 'rgba(0,0,0,0.4)',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    outline: 'none',
+                    minHeight: '80px',
+                    resize: 'vertical'
+                  }} 
+                />
               </div>
 
               {saveSuccess && (

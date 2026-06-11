@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import RestTimer from '@/components/athlete/RestTimer';
+import BodyMap from '@/components/athlete/BodyMap';
+import ExerciseInstructionModal from '@/components/athlete/ExerciseInstructionModal';
+import useOfflineSync from '@/hooks/useOfflineSync';
 
 export default function Training() {
   const [pin, setPin] = useState('');
@@ -12,11 +16,6 @@ export default function Training() {
   // Microcycle day management
   const [selectedDay, setSelectedDay] = useState('monday');
   const [todayDayName, setTodayDayName] = useState('monday');
-
-  // Strength Rest Timer States
-  const [timerSeconds, setTimerSeconds] = useState(90);
-  const [timerActive, setTimerActive] = useState(false);
-  const [timerMax, setTimerMax] = useState(90);
 
   // Wellness Form States (Tue/Thu)
   const [sleepScore, setSleepScore] = useState(4);
@@ -79,37 +78,8 @@ export default function Training() {
     { id: 'sunday', label: 'DOM', name: 'Domingo', type: 'REST', theme: 'Descanso Ativo' }
   ];
 
-  const syncOfflineQueue = async () => {
-    if (typeof window === 'undefined' || !navigator.onLine) return;
-    const queue = JSON.parse(localStorage.getItem('ascend_offline_queue') || '[]');
-    if (queue.length === 0) return;
-
-    console.log(`Sincronizando ${queue.length} treino(s) pendente(s) offline...`);
-    const successfulIndexes = [];
-
-    for (let i = 0; i < queue.length; i++) {
-      const item = queue[i];
-      try {
-        const res = await fetch(item.url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item.body)
-        });
-        const data = await res.json();
-        if (data.success) {
-          successfulIndexes.push(i);
-        }
-      } catch (e) {
-        console.error("Falha ao sincronizar item offline:", e);
-      }
-    }
-
-    const remainingQueue = queue.filter((_, idx) => !successfulIndexes.includes(idx));
-    localStorage.setItem('ascend_offline_queue', JSON.stringify(remainingQueue));
-    if (successfulIndexes.length > 0) {
-      alert(`${successfulIndexes.length} treino(s) de performance salvo(s) offline foi/foram sincronizado(s) com sucesso!`);
-    }
-  };
+  // Custom hook for offline sync
+  const { saveToOfflineQueue } = useOfflineSync();
 
   // Auto-load PIN from URL and set today's day of week
   useEffect(() => {
@@ -125,28 +95,8 @@ export default function Training() {
         setPin(pinParam.toUpperCase());
         autoLoadWorkout(pinParam.toUpperCase());
       }
-      
-      syncOfflineQueue();
-      window.addEventListener('online', syncOfflineQueue);
-      return () => window.removeEventListener('online', syncOfflineQueue);
     }
   }, []);
-
-  // Rest Timer countdown logic
-  useEffect(() => {
-    let interval = null;
-    if (timerActive && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds(prev => prev - 1);
-      }, 1000);
-    } else if (timerSeconds === 0) {
-      setTimerActive(false);
-      if (typeof window !== 'undefined' && window.navigator?.vibrate) {
-        window.navigator.vibrate([200, 100, 200]);
-      }
-    }
-    return () => clearInterval(interval);
-  }, [timerActive, timerSeconds]);
 
   const autoLoadWorkout = async (pinCode) => {
     setLoading(true);
@@ -190,12 +140,6 @@ export default function Training() {
     }));
   };
 
-  const triggerResetTimer = (seconds = 90) => {
-    setTimerMax(seconds);
-    setTimerSeconds(seconds);
-    setTimerActive(true);
-  };
-
   // Submit Gym session
   const finishGymWorkout = async () => {
     const athleteStorage = localStorage.getItem('athlete');
@@ -209,10 +153,7 @@ export default function Training() {
     const url = `/api/workouts/${pin.toUpperCase()}/finish`;
 
     if (typeof window !== 'undefined' && !navigator.onLine) {
-      const queue = JSON.parse(localStorage.getItem('ascend_offline_queue') || '[]');
-      queue.push({ url, body: payload });
-      localStorage.setItem('ascend_offline_queue', JSON.stringify(queue));
-      alert("Treino salvo offline no dispositivo! Será sincronizado automaticamente assim que recuperar a conexão.");
+      saveToOfflineQueue(url, payload, "Treino salvo offline no dispositivo! Será sincronizado automaticamente assim que recuperar a conexão.");
       setFinished(true);
       return;
     }
@@ -225,10 +166,7 @@ export default function Training() {
       });
     } catch(e) {
       console.error(e);
-      const queue = JSON.parse(localStorage.getItem('ascend_offline_queue') || '[]');
-      queue.push({ url, body: payload });
-      localStorage.setItem('ascend_offline_queue', JSON.stringify(queue));
-      alert("Treino salvo offline devido a falha de conexão.");
+      saveToOfflineQueue(url, payload, "Treino salvo offline devido a falha de conexão.");
     }
     setFinished(true);
   };
@@ -258,10 +196,7 @@ export default function Training() {
     const url = `/api/workouts/${pin.toUpperCase()}/finish`;
 
     if (typeof window !== 'undefined' && !navigator.onLine) {
-      const queue = JSON.parse(localStorage.getItem('ascend_offline_queue') || '[]');
-      queue.push({ url, body: payload });
-      localStorage.setItem('ascend_offline_queue', JSON.stringify(queue));
-      alert("Treino de campo salvo offline! Será sincronizado automaticamente assim que recuperar a conexão.");
+      saveToOfflineQueue(url, payload, "Treino de campo salvo offline! Será sincronizado automaticamente assim que recuperar a conexão.");
       setFinished(true);
       return;
     }
@@ -274,10 +209,7 @@ export default function Training() {
       });
     } catch(e) {
       console.error(e);
-      const queue = JSON.parse(localStorage.getItem('ascend_offline_queue') || '[]');
-      queue.push({ url, body: payload });
-      localStorage.setItem('ascend_offline_queue', JSON.stringify(queue));
-      alert("Treino de campo salvo offline devido a falha de conexão.");
+      saveToOfflineQueue(url, payload, "Treino de campo salvo offline devido a falha de conexão.");
     }
     alert(`Treino de Campo concluído! RPE da Sessão: ${rpeScore}/10`);
     setFinished(true);
@@ -514,212 +446,9 @@ export default function Training() {
                   </div>
                 </div>
                 
-                <div style={{ flex: 0.8, display: 'flex', justifyContent: 'center' }}>
-                  <svg viewBox="0 0 130 140" style={{ width: '120px', height: '130px', overflow: 'visible' }}>
-                    {/* FRONT BODY */}
-                    <g>
-                      <circle cx="35" cy="15" r="7" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-                      <line x1="35" y1="22" x2="35" y2="27" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-                      <path d="M 20 28 L 50 28 L 46 70 L 24 70 Z" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-                      
-                      <path 
-                        d="M 22 30 L 48 30 L 46 45 L 24 45 Z" 
-                        fill={activeMuscles.chest ? "rgba(0, 255, 255, 0.75)" : "rgba(255,255,255,0.03)"} 
-                        stroke={activeMuscles.chest ? "#00ffff" : "rgba(255,255,255,0.08)"} 
-                        strokeWidth="1"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.chest ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <rect 
-                        x="25" y="48" width="20" height="18" rx="2"
-                        fill={activeMuscles.core ? "rgba(0, 255, 255, 0.75)" : "rgba(255,255,255,0.03)"} 
-                        stroke={activeMuscles.core ? "#00ffff" : "rgba(255,255,255,0.08)"} 
-                        strokeWidth="1"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.core ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <path 
-                        d="M 18 30 L 13 65" 
-                        stroke={activeMuscles.arms ? "#00ffff" : "rgba(255,255,255,0.15)"} 
-                        strokeWidth="3" 
-                        strokeLinecap="round"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.arms ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <path 
-                        d="M 52 30 L 57 65" 
-                        stroke={activeMuscles.arms ? "#00ffff" : "rgba(255,255,255,0.15)"} 
-                        strokeWidth="3" 
-                        strokeLinecap="round"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.arms ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <path 
-                        d="M 28 73 L 28 130" 
-                        stroke={activeMuscles.legs ? "#00ffff" : "rgba(255,255,255,0.15)"} 
-                        strokeWidth="4" 
-                        strokeLinecap="round"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.legs ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <path 
-                        d="M 42 73 L 42 130" 
-                        stroke={activeMuscles.legs ? "#00ffff" : "rgba(255,255,255,0.15)"} 
-                        strokeWidth="4" 
-                        strokeLinecap="round"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.legs ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <text x="35" y="138" fill="rgba(255,255,255,0.3)" fontSize="7" textAnchor="middle">FRENTE</text>
-                    </g>
-
-                    {/* BACK BODY */}
-                    <g>
-                      <circle cx="95" cy="15" r="7" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-                      <line x1="95" y1="22" x2="95" y2="27" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-                      <path d="M 80 28 L 110 28 L 106 70 L 84 70 Z" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-                      
-                      <path 
-                        d="M 82 30 L 108 30 L 105 52 L 85 52 Z" 
-                        fill={activeMuscles.back ? "rgba(0, 255, 255, 0.75)" : "rgba(255,255,255,0.03)"} 
-                        stroke={activeMuscles.back ? "#00ffff" : "rgba(255,255,255,0.08)"} 
-                        strokeWidth="1"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.back ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <path 
-                        d="M 85 55 L 105 55 L 104 68 L 86 68 Z" 
-                        fill={activeMuscles.legs || activeMuscles.back ? "rgba(0, 255, 255, 0.75)" : "rgba(255,255,255,0.03)"} 
-                        stroke={activeMuscles.legs || activeMuscles.back ? "#00ffff" : "rgba(255,255,255,0.08)"} 
-                        strokeWidth="1"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.legs || activeMuscles.back ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <path 
-                        d="M 78 28 Q 95 24 112 28 L 108 34 L 82 34 Z" 
-                        fill={activeMuscles.shoulders ? "rgba(0, 255, 255, 0.75)" : "rgba(255,255,255,0.03)"} 
-                        stroke={activeMuscles.shoulders ? "#00ffff" : "rgba(255,255,255,0.08)"} 
-                        strokeWidth="1"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.shoulders ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <path 
-                        d="M 78 30 L 73 65" 
-                        stroke={activeMuscles.arms ? "#00ffff" : "rgba(255,255,255,0.15)"} 
-                        strokeWidth="3" 
-                        strokeLinecap="round"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.arms ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <path 
-                        d="M 112 30 L 117 65" 
-                        stroke={activeMuscles.arms ? "#00ffff" : "rgba(255,255,255,0.15)"} 
-                        strokeWidth="3" 
-                        strokeLinecap="round"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.arms ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <path 
-                        d="M 88 73 L 88 130" 
-                        stroke={activeMuscles.legs ? "#00ffff" : "rgba(255,255,255,0.15)"} 
-                        strokeWidth="4" 
-                        strokeLinecap="round"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.legs ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <path 
-                        d="M 102 73 L 102 130" 
-                        stroke={activeMuscles.legs ? "#00ffff" : "rgba(255,255,255,0.15)"} 
-                        strokeWidth="4" 
-                        strokeLinecap="round"
-                        style={{ transition: 'all 0.3s ease', filter: activeMuscles.legs ? 'drop-shadow(0 0 4px #00ffff)' : 'none' }}
-                      />
-                      <text x="95" y="138" fill="rgba(255,255,255,0.3)" fontSize="7" textAnchor="middle">VERSO</text>
-                    </g>
-                  </svg>
-                </div>
+                <BodyMap activeMuscles={activeMuscles} />
+              <RestTimer />
               </div>
-
-              {/* Gym Floating Rest Stopwatch with SVG Circular Progress */}
-              <div style={{
-                background: '#070a13',
-                border: '1.5px solid #06b6d4',
-                padding: '15px 20px',
-                borderRadius: '8px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.4)',
-                gap: '15px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  {/* Circular Progress Ring */}
-                  <div style={{ position: 'relative', width: '64px', height: '64px' }}>
-                    <svg viewBox="0 0 60 60" style={{ width: '64px', height: '64px', overflow: 'visible' }}>
-                      <circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
-                      <circle 
-                        cx="30" 
-                        cy="30" 
-                        r="25" 
-                        fill="none" 
-                        stroke={timerSeconds <= 10 ? '#ef4444' : '#00ffff'} 
-                        strokeWidth="4"
-                        strokeDasharray="157.08"
-                        strokeDashoffset={157.08 * (1 - (timerSeconds / (timerMax || 90)))}
-                        strokeLinecap="round"
-                        transform="rotate(-90 30 30)"
-                        style={{ 
-                          transition: timerActive ? 'stroke-dashoffset 1s linear, stroke 0.3s ease' : 'stroke-dashoffset 0.3s ease, stroke 0.3s ease',
-                          filter: `drop-shadow(0 0 4px ${timerSeconds <= 10 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(0, 255, 255, 0.4)'})` 
-                        }}
-                      />
-                    </svg>
-                    <div style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      fontSize: '1rem',
-                      fontFamily: 'var(--font-display)',
-                      color: timerSeconds <= 10 ? '#ef4444' : '#00ffff',
-                      fontWeight: 'bold',
-                      textShadow: `0 0 5px ${timerSeconds <= 10 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(0, 255, 255, 0.3)'}`
-                    }}>
-                      {Math.floor(timerSeconds / 60)}:{(timerSeconds % 60).toString().padStart(2, '0')}
-                    </div>
-                  </div>
-                  <div>
-                    <h5 style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>INTERVALO</h5>
-                    <span style={{ fontSize: '0.7rem', color: timerActive ? 'var(--accent-green)' : 'var(--text-secondary)', fontWeight: 'bold' }}>
-                      {timerActive ? 'ATIVO' : 'PAUSADO'}
-                    </span>
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'flex-end' }}>
-                  <button 
-                    onClick={() => setTimerActive(!timerActive)} 
-                    style={{
-                      background: timerActive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
-                      color: timerActive ? '#ef4444' : '#22c55e',
-                      border: `1.5px solid ${timerActive ? '#ef4444' : '#22c55e'}`,
-                      borderRadius: '6px',
-                      padding: '8px 12px',
-                      fontSize: '0.8rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {timerActive ? 'PAUSAR' : 'INICIAR'}
-                  </button>
-                  <button 
-                    onClick={() => triggerResetTimer(90)}
-                    style={{
-                      background: 'rgba(255,255,255,0.03)',
-                      color: '#fff',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '6px',
-                      padding: '8px 10px',
-                      fontSize: '0.8rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    90s
-                  </button>
-                  <button onClick={() => triggerResetTimer(60)} style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', padding: '8px 10px', fontSize: '0.8rem', cursor: 'pointer' }}>60s</button>
-                  <button onClick={() => triggerResetTimer(120)} style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', padding: '8px 10px', fontSize: '0.8rem', cursor: 'pointer' }}>120s</button>
-                </div>
-              </div>
-
               {/* Exercises List */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {currentDaySets.map((set, index) => (
@@ -1228,117 +957,10 @@ export default function Training() {
       )}
 
       {/* POPUP MODAL: CHALKBOARD DIGITAL MODE */}
-      {selectedEx && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0,
-          width: '100vw', height: '100vh',
-          background: 'rgba(8, 8, 8, 0.94)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div className="hud-panel-cut" style={{
-            maxWidth: '520px',
-            width: '100%',
-            background: '#080c18',
-            border: '2px solid #06b6d4',
-            boxShadow: '0 0 35px rgba(6, 182, 212, 0.3)',
-            position: 'relative',
-            padding: '25px',
-            clipPath: 'none'
-          }}>
-            <button 
-              onClick={() => setSelectedEx(null)}
-              style={{
-                position: 'absolute',
-                top: '15px',
-                right: '15px',
-                background: 'transparent',
-                border: 'none',
-                color: '#fff',
-                fontSize: '1.5rem',
-                cursor: 'pointer'
-              }}
-            >
-              ✖
-            </button>
-
-            <h3 style={{ color: '#06b6d4', marginBottom: '5px', fontSize: '1.8rem', letterSpacing: '1px', textShadow: '0 0 10px rgba(6,182,212,0.3)' }}>
-              {selectedEx.name.toUpperCase()}
-            </h3>
-            
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-              <span style={{ padding: '3px 8px', background: 'rgba(6, 182, 212, 0.1)', border: '1px solid #06b6d4', color: '#06b6d4', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                {selectedEx.type}
-              </span>
-              <span style={{ padding: '3px 8px', background: 'rgba(255,255,255,0.06)', color: '#a1a1aa', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                LOCAL: {selectedEx.location}
-              </span>
-            </div>
-
-            <div style={{ 
-              position: 'relative', 
-              width: '100%', 
-              height: '240px', 
-              background: '#02040a', 
-              borderRadius: '8px', 
-              overflow: 'hidden', 
-              border: '2px dashed rgba(6, 182, 212, 0.3)',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: 0, left: 0, right: 0, bottom: 0,
-                backgroundImage: 'linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px)',
-                backgroundSize: '20px 20px',
-                pointerEvents: 'none'
-              }}></div>
-
-              <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-                <div style={{
-                  width: '100%', height: '100%',
-                  background: 'radial-gradient(circle, rgba(6,182,212,0.04) 0%, transparent 60%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#475569',
-                  fontSize: '0.8rem'
-                }}>
-                  <span style={{ fontStyle: 'italic' }}>[Prancheta Técnica Digital]</span>
-                </div>
-              </div>
-            </div>
-
-            <h4 style={{ color: '#fff', marginBottom: '6px', fontSize: '0.95rem' }}>Mecânica de Execução (Cues)</h4>
-            <p style={{ 
-              color: '#a1a1aa', 
-              lineHeight: '1.6', 
-              fontSize: '0.85rem',
-              maxHeight: '130px',
-              overflowY: 'auto',
-              paddingRight: '5px',
-              margin: 0
-            }}>
-              {selectedEx.description || 'Nenhuma mecânica cadastrada para este exercício.'}
-            </p>
-
-            <button 
-              onClick={() => setSelectedEx(null)}
-              className="btn" 
-              style={{ width: '100%', marginTop: '22px', padding: '12px', fontWeight: 'bold', background: '#06b6d4', color: '#000' }}
-            >
-              ENTENDIDO, VOLTAR AO TREINO
-            </button>
-          </div>
-        </div>
-      )}
+      <ExerciseInstructionModal 
+        selectedEx={selectedEx} 
+        onClose={() => setSelectedEx(null)} 
+      />
       
       {/* Floating Action Button (FAB) for ending active workout */}
       {workout && !finished && (currentDayInfo?.type === 'GYM' || currentDayInfo?.type === 'FIELD') && (

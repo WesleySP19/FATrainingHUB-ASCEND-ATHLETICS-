@@ -56,49 +56,8 @@ export default function PhysioDashboard({ athleteId }) {
     );
   }
 
-  const { athleteName, position, overall, acwr, history } = data;
-
-  // Determinar status do ACWR
-  let acwrStatusText = 'Sem Carga';
-  let acwrColor = '#94a3b8'; // Cinza
-  let acwrAdvice = 'Nenhum treino recente registrado para gerar análise fisiológica.';
-  let acwrSeverity = 'neutral';
-
-  if (acwr > 0) {
-    if (acwr < 0.8) {
-      acwrStatusText = 'Subtreino (Under-training)';
-      acwrColor = '#38bdf8'; // Ciano
-      acwrAdvice = 'O atleta apresenta carga de treino aguda significativamente menor que a crônica. Há risco de destreinamento. Recomendação: Aumentar gradualmente a intensidade ou volume das sessões.';
-      acwrSeverity = 'info';
-    } else if (acwr <= 1.3) {
-      acwrStatusText = 'Zona Ideal (Optimal Workload)';
-      acwrColor = '#10b981'; // Emerald
-      acwrAdvice = 'A relação entre treino agudo e crônico está equilibrada. Esta é a "Zona Verde", onde o condicionamento físico melhora minimizando o risco de lesões. Recomendação: Manter a planilha atual.';
-      acwrSeverity = 'success';
-    } else if (acwr <= 1.5) {
-      acwrStatusText = 'Zona de Sobrecarga (Overreaching)';
-      acwrColor = '#f59e0b'; // Amarelo
-      acwrAdvice = 'Carga de treino em ascensão acelerada. O atleta está em fase de sobrecarga funcional. Recomendação: Monitorar atentamente a dor muscular e garantir o repouso adequado nos próximos dias.';
-      acwrSeverity = 'warning';
-    } else {
-      acwrStatusText = 'Risco Crítico de Lesão (Danger Zone)';
-      acwrColor = '#ef4444'; // Vermelho
-      acwrAdvice = '🚨 ALERTA CRÍTICO: Relação agudo-crônica acima da linha de perigo (ACWR > 1.50). O risco de lesão muscular ou fadiga crônica é estatisticamente muito alto. Recomendação: Reduzir imediatamente a carga em 40-50% ou sugerir repouso/treino regenerativo.';
-      acwrSeverity = 'danger';
-    }
-  }
-
-  // Ajustar recomendação se houver dor/soneca ruim nos últimos treinos
-  const lastSession = history.length > 0 ? history[history.length - 1] : null;
-  let wellnessAlert = null;
-  if (lastSession) {
-    if (lastSession.pain >= 4 && acwr > 1.3) {
-      wellnessAlert = '⚠️ ATENÇÃO: Dor muscular elevada detectada em conjunto com sobrecarga de treinamento. Risco iminente de estiramento.';
-      acwrAdvice = 'Atenção redobrada! Recomenda-se repouso total ou sessão exclusiva de fisioterapia/liberação miofascial.';
-    } else if (lastSession.sleep <= 2) {
-      wellnessAlert = '💤 AVISO DE RECUPERAÇÃO: Qualidade do sono crítica nas últimas 24h. O processo de restauração muscular foi comprometido.';
-    }
-  }
+  const { athleteName, position, overall, acwr, history, analysis } = data;
+  const { acwrStatusText, acwrColor, acwrAdvice, acwrSeverity, wellnessAlert } = analysis;
 
   // SVG Chart Dimensions
   const width = 500;
@@ -248,9 +207,9 @@ export default function PhysioDashboard({ athleteId }) {
               marginTop: '10px',
               padding: '8px 12px',
               borderRadius: '4px',
-              background: lastSession?.pain >= 4 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(234, 179, 8, 0.1)',
-              border: `1px solid ${lastSession?.pain >= 4 ? '#ef4444' : '#f59e0b'}`,
-              color: lastSession?.pain >= 4 ? '#fca5a5' : '#fde047',
+              background: wellnessAlert && wellnessAlert.includes('Dor') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(234, 179, 8, 0.1)',
+              border: `1px solid ${wellnessAlert && wellnessAlert.includes('Dor') ? '#ef4444' : '#f59e0b'}`,
+              color: wellnessAlert && wellnessAlert.includes('Dor') ? '#fca5a5' : '#fde047',
               fontSize: '0.75rem',
               fontWeight: '500'
             }}>

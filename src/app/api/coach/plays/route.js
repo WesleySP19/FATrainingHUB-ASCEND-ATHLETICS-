@@ -24,7 +24,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const data = await request.json();
-    const { name, sport, fieldSize, dataJSON, coachId } = data;
+    const { name, sport, execution, position, description, fieldSize, dataJSON, coachId } = data;
 
     if (!name || !coachId || !dataJSON) {
       return NextResponse.json({ success: false, error: 'Dados obrigatórios ausentes.' }, { status: 400 });
@@ -34,6 +34,9 @@ export async function POST(request) {
       data: {
         name,
         sport: sport || 'Futebol Americano',
+        execution: execution || 'Ataque',
+        position: position || null,
+        description: description || null,
         fieldSize: fieldSize || '600,400',
         dataJSON: typeof dataJSON === 'string' ? dataJSON : JSON.stringify(dataJSON),
         coachId

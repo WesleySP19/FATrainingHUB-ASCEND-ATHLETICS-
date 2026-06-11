@@ -29,338 +29,267 @@ export default function TacticalDashboard({ athleteId, initialData }) {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px', color: 'var(--primary-color)', fontWeight: 'bold' }}>
-        Carregando Central de Inteligência Tática...
+      <div style={{ textAlign: 'center', padding: '60px', color: '#fff', fontWeight: 'bold' }}>
+        Carregando Destaque do Atleta...
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div style={{ padding: '20px', color: 'var(--accent-red)', textAlign: 'center' }}>
+      <div style={{ padding: '40px', color: '#ef4444', textAlign: 'center', fontWeight: 'bold' }}>
         {error || 'Nenhum dado tático disponível.'}
       </div>
     );
   }
 
-  // Neon color mapper based on sport
   const getSportColor = () => {
-    if (data.sport === 'Powerlifting') return '#38bdf8'; // Neon Blue
-    if (data.sport === 'Rugby') return '#34d399'; // Neon Emerald Green
-    return '#a3e635'; // Neon Lime Green / Yellow
+    if (data.sport === 'Powerlifting') return '#dc2626'; // Deep Red
+    if (data.sport === 'Rugby') return '#059669'; // Emerald
+    return '#dc2626'; // Default to deep red (like Pogba image)
   };
 
-  const sportColor = getSportColor();
+  const primaryColor = getSportColor();
+  const hasHighlights = data.highlights && data.highlights.length > 0;
+
+  // Extrair YouTube Video ID se possível para thumbnail
+  const getYoutubeId = (url) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
 
   return (
     <div style={{
-      background: '#09090b',
+      background: '#0a0a0f', // Very dark blue/black
       color: '#fff',
-      padding: '25px',
-      borderRadius: '12px',
-      border: `2px solid ${sportColor}`,
-      boxShadow: `0 0 25px rgba(${data.sport === 'Powerlifting' ? '56,189,248' : data.sport === 'Rugby' ? '52,211,153' : '163,230,53'}, 0.15)`,
+      borderRadius: '16px', // Rounded corners for modal popup
       fontFamily: 'system-ui, -apple-system, sans-serif',
       position: 'relative',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: 'auto',
     }}>
       
-      {/* Chalkboard Grid Overlay */}
+      {/* Background Pattern */}
       <div style={{
         position: 'absolute',
         top: 0, left: 0, right: 0, bottom: 0,
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px)',
+        backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.02) 75%, rgba(255,255,255,0.02)), linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.02) 75%, rgba(255,255,255,0.02))',
         backgroundSize: '20px 20px',
-        pointerEvents: 'none'
+        backgroundPosition: '0 0, 10px 10px',
+        pointerEvents: 'none',
+        opacity: 0.5
       }}></div>
 
-      {/* Header */}
-      <header style={{
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        paddingBottom: '15px',
-        marginBottom: '20px',
+      {/* HUGE CIRCLE BEHIND PLAYER */}
+      <div style={{
+        position: 'absolute',
+        top: '5%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '500px',
+        height: '500px',
+        maxHeight: '80vw',
+        maxWidth: '80vw',
+        background: primaryColor,
+        borderRadius: '50%',
+        zIndex: 1,
+        boxShadow: `0 0 100px ${primaryColor}66`
+      }}></div>
+
+      {/* TOP/HERO SECTION */}
+      <div style={{
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'baseline'
-      }}>
-        <div>
-          <h2 style={{
-            margin: 0,
-            fontSize: '1.25rem',
-            color: sportColor,
-            textTransform: 'uppercase',
-            letterSpacing: '2px',
-            textShadow: `0 0 10px ${sportColor}33`
-          }}>
-            {data.teamName} / ATHLETE: {data.athleteName}
-          </h2>
-          <span style={{ fontSize: '0.8rem', color: '#71717a', textTransform: 'uppercase' }}>
-            Modalidade: {data.sport}
-          </span>
-        </div>
-        <div>
-          <span style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            padding: '4px 10px',
-            borderRadius: '4px',
-            fontSize: '0.75rem',
-            color: '#a1a1aa'
-          }}>
-            STATUS: ACTIVE
-          </span>
-        </div>
-      </header>
-
-      {/* 4 Summary Blocks */}
-      <section style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-        gap: '15px',
-        marginBottom: '25px'
-      }}>
-        {data.summary.map((sum, index) => (
-          <div key={index} style={{
-            background: '#18181b',
-            borderLeft: `3px solid ${sportColor}`,
-            padding: '12px 15px',
-            borderRadius: '4px',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.2)'
-          }}>
-            <div style={{ fontSize: '0.7rem', color: '#a1a1aa', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '8px' }}>
-              {sum.label}
-            </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-              {sum.value}
-            </div>
-          </div>
-        ))}
-      </section>
-
-      {/* Main Diagram & Lists split */}
-      <section style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '20px',
-        marginBottom: '25px',
-        position: 'relative'
+        flexDirection: 'row',
+        position: 'relative',
+        zIndex: 2,
+        padding: '40px 50px',
+        gap: '40px',
+        flexWrap: 'wrap'
       }}>
         
-        {/* Left List: Mechanics */}
-        <div style={{
-          background: 'rgba(24, 24, 27, 0.9)',
-          border: '1px solid rgba(255,255,255,0.05)',
-          padding: '18px',
-          borderRadius: '8px',
-          zIndex: 2
-        }}>
-          <h4 style={{ margin: '0 0 15px 0', fontSize: '0.85rem', color: sportColor, textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
-            {data.mechanicsTitle}
-          </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {data.mechanics.map((mech, index) => (
-              <div key={index} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.02)', paddingBottom: '6px' }}>
-                <span style={{ color: '#d4d4d8', fontSize: '0.9rem' }}>{mech.name}</span>
-                <span style={{ fontWeight: 'bold', fontSize: '0.95rem', color: sportColor }}>{mech.value}</span>
+        {/* LEFT COLUMN: Titles and Summary */}
+        <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          
+          <div style={{ display: 'flex', gap: '20px', marginBottom: '30px', alignItems: 'center' }}>
+            {data.summary.slice(0, 2).map((sum, index) => (
+              <div key={index} style={{ textAlign: 'center' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#18181b', border: '2px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px auto', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                  {sum.value}
+                </div>
+                <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: '#a1a1aa', fontWeight: 'bold' }}>
+                  {sum.label}
+                </div>
               </div>
             ))}
           </div>
+
+          <h1 style={{ 
+            fontSize: '3.5rem', 
+            fontWeight: '900', 
+            lineHeight: '1.1',
+            margin: '0 0 20px 0',
+            letterSpacing: '-1px'
+          }}>
+            «The Franchise»<br />
+            {data.athleteName}'s<br />
+            Stats Are Simply<br />
+            Stunning
+          </h1>
+
+          <p style={{ color: '#a1a1aa', fontSize: '1rem', lineHeight: '1.6', maxWidth: '400px' }}>
+            {data.athleteName} is dominating the competition in {data.sport}. Representing {data.teamName}, these metrics showcase peak performance.
+          </p>
+
+          <div style={{ marginTop: '30px' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', borderBottom: `2px solid ${primaryColor}`, paddingBottom: '5px', cursor: 'pointer' }}>
+              VIEW FULL PROFILE →
+            </span>
+          </div>
+
         </div>
 
-        {/* Center Section: Photo with tactical overlays or SVG silhouette fallback */}
-        <div style={{
-          height: '240px',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          position: 'relative',
-          background: '#000',
-          borderRadius: '8px',
-          overflow: 'hidden',
-          border: '1.5px solid rgba(255,255,255,0.08)'
-        }}>
-          {/* Tactical Grid Backdrop */}
-          <div style={{
-            position: 'absolute',
-            top: 0, left: 0, right: 0, bottom: 0,
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px)',
-            backgroundSize: '15px 15px',
-            pointerEvents: 'none',
-            zIndex: 1
-          }}></div>
-
+        {/* CENTER COLUMN: The Player Image */}
+        <div style={{ flex: '1 1 400px', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', minHeight: '500px', position: 'relative' }}>
           {data.photo ? (
-            /* ATLETA COM FOTO: Renderiza a foto do atleta com os overlays de vetores táticos no topo */
-            <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img 
-                src={data.photo} 
-                alt={data.athleteName} 
-                style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  objectFit: 'cover', 
-                  opacity: 0.7,
-                  filter: 'grayscale(40%) contrast(120%) brightness(85%)'
-                }} 
-              />
-              {/* Inner Glowing Frame */}
-              <div style={{
-                position: 'absolute',
-                top: 0, left: 0, right: 0, bottom: 0,
-                border: `2px solid ${sportColor}55`,
-                pointerEvents: 'none',
-                boxShadow: `inset 0 0 30px ${sportColor}33`,
-                zIndex: 2
-              }}></div>
-
-              {/* Dynamic SVG Tactical Overlays over photo */}
-              <svg 
-                viewBox="0 0 100 100" 
-                style={{ 
-                  position: 'absolute', 
-                  top: 0, left: 0, 
-                  width: '100%', height: '100%', 
-                  pointerEvents: 'none',
-                  zIndex: 3
-                }}
-              >
-                {/* Target Joint Overlays / Force Vectors on top of the image */}
-                {data.sport === 'Powerlifting' ? (
-                  <>
-                    <line x1="50" y1="50" x2="50" y2="20" stroke={sportColor} strokeWidth="1.8" />
-                    <polygon points="50,20 47,26 53,26" fill={sportColor} />
-                    <circle cx="50" cy="50" r="3.5" fill="#ef4444" />
-                    <circle cx="50" cy="50" r="8" fill="none" stroke="#ef4444" strokeWidth="1" strokeDasharray="2 2" />
-                    <text x="50" y="14" fill={sportColor} fontSize="4.5" fontWeight="bold" textAnchor="middle">APEX TORQUE</text>
-                  </>
-                ) : (
-                  <>
-                    <path d="M 20 70 Q 50 40 80 70" fill="none" stroke="#22c55e" strokeWidth="1.8" strokeDasharray="3 3" />
-                    <circle cx="50" cy="53" r="3.5" fill="#facc15" />
-                    <circle cx="50" cy="53" r="8" fill="none" stroke="#facc15" strokeWidth="1.2" />
-                    <text x="50" y="65" fill="#facc15" fontSize="4.5" fontWeight="bold" textAnchor="middle">CENTRO DE MASSA</text>
-                  </>
-                )}
-              </svg>
-            </div>
+            <img 
+              src={data.photo} 
+              alt={data.athleteName} 
+              style={{
+                width: '100%',
+                height: 'auto',
+                maxHeight: '500px',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0px 20px 30px rgba(0,0,0,0.8)) saturate(1.2) contrast(1.1)',
+                zIndex: 10
+              }}
+            />
           ) : (
-            /* ATLETA SEM FOTO: Fallback para o diagrama de linhas de vetor padrão (Stick Figure) */
-            data.svgBody === 'powerlifting' ? (
-              /* Barbell Squatter Link Diagram */
-              <svg viewBox="0 0 100 100" style={{ width: '80%', height: '80%', zIndex: 2 }}>
-                {/* Floor */}
-                <line x1="10" y1="90" x2="90" y2="90" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-                {/* Squatter Body */}
-                <circle cx="50" cy="25" r="7" fill="none" stroke={sportColor} strokeWidth="1.5" />
-                {/* Spine */}
-                <line x1="50" y1="32" x2="42" y2="55" stroke={sportColor} strokeWidth="2.5" />
-                {/* Femur */}
-                <line x1="42" y1="55" x2="60" y2="70" stroke={sportColor} strokeWidth="2.5" />
-                {/* Tibia */}
-                <line x1="60" y1="70" x2="52" y2="90" stroke={sportColor} strokeWidth="2.5" />
-                {/* Joint Dots */}
-                <circle cx="42" cy="55" r="2.5" fill="#ef4444" />
-                <circle cx="60" cy="70" r="2.5" fill="#facc15" />
-                {/* Barbell */}
-                <line x1="30" y1="35" x2="65" y2="35" stroke="#fff" strokeWidth="3.5" />
-                <circle cx="30" cy="35" r="5" fill="#ef4444" />
-                <circle cx="65" cy="35" r="5" fill="#ef4444" />
-                {/* Force Vector */}
-                <path d="M 50 35 L 50 10" fill="none" stroke="#22c55e" strokeWidth="2" markerEnd="url(#arrow)" />
-                <polygon points="50,10 47,15 53,15" fill="#22c55e" />
-                <text x="50" y="8" fill="#22c55e" fontSize="5" fontWeight="bold" textAnchor="middle">TORQUE VECTORS</text>
-              </svg>
-            ) : (
-              /* Tactical Runner / Field Outline */
-              <svg viewBox="0 0 100 100" style={{ width: '80%', height: '80%', zIndex: 2 }}>
-                {/* Field Lines */}
-                <rect x="5" y="5" width="90" height="90" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-                <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" />
-                <circle cx="50" cy="50" r="15" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-                
-                {/* Human Outline vector */}
-                <circle cx="50" cy="20" r="10" fill="none" stroke={sportColor} strokeWidth="1.5" />
-                {/* Torso */}
-                <path d="M 40 35 L 60 35 L 56 75 L 44 75 Z" fill="none" stroke={sportColor} strokeWidth="1.5" />
-                {/* Legs */}
-                <line x1="44" y1="75" x2="40" y2="95" stroke={sportColor} strokeWidth="1.8" />
-                <line x1="56" y1="75" x2="60" y2="95" stroke={sportColor} strokeWidth="1.8" />
-                
-                {/* Force Vectors */}
-                <path d="M 35 45 Q 50 65 65 45" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="2 2" />
-                <circle cx="50" cy="55" r="3" fill="#facc15" />
-                <text x="50" y="62" fill="#facc15" fontSize="4.5" fontWeight="bold" textAnchor="middle">CENTRO DE MASSA</text>
-              </svg>
-            )
+            <div style={{
+              width: '300px', height: '500px', 
+              background: 'linear-gradient(to top, #18181b, transparent)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'rgba(255,255,255,0.2)', fontSize: '1.5rem', fontWeight: 'bold',
+              border: '2px dashed rgba(255,255,255,0.1)'
+            }}>
+              NO PHOTO
+            </div>
           )}
         </div>
 
-        {/* Right List: Spatial distribution */}
-        <div style={{
-          background: 'rgba(24, 24, 27, 0.9)',
-          border: '1px solid rgba(255,255,255,0.05)',
-          padding: '18px',
-          borderRadius: '8px',
-          zIndex: 2
-        }}>
-          <h4 style={{ margin: '0 0 15px 0', fontSize: '0.85rem', color: sportColor, textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
-            {data.fieldTitle}
-          </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {data.field.map((f, index) => (
-              <div key={index} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.02)', paddingBottom: '6px' }}>
-                <span style={{ color: '#d4d4d8', fontSize: '0.9rem' }}>{f.name}</span>
-                <span style={{ fontWeight: 'bold', fontSize: '0.95rem', color: sportColor }}>{f.value}</span>
+        {/* RIGHT COLUMN: Tactical Breakdown */}
+        <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '20px', zIndex: 10 }}>
+          
+          <div style={{ background: '#111116', padding: '25px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h4 style={{ margin: '0 0 20px 0', fontSize: '0.9rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              {data.mechanicsTitle}
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {data.mechanics.map((mech, index) => (
+                <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: index === 0 ? '#fbbf24' : '#fff' }}></div>
+                    <span style={{ color: '#d4d4d8', fontSize: '0.85rem' }}>{mech.name}</span>
+                  </div>
+                  <span style={{ fontWeight: 'bold', fontSize: '1rem', color: '#fff' }}>{mech.value}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: '20px', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#71717a', cursor: 'pointer' }}>VIEW ALL STATS →</span>
+            </div>
+          </div>
+
+          <div style={{ background: '#111116', padding: '25px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h4 style={{ margin: '0 0 20px 0', fontSize: '0.9rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              {data.fieldTitle}
+            </h4>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ color: '#71717a', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <th style={{ textAlign: 'left', paddingBottom: '10px' }}>Pos</th>
+                  <th style={{ textAlign: 'left', paddingBottom: '10px' }}>Metric</th>
+                  <th style={{ textAlign: 'right', paddingBottom: '10px' }}>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.field.map((f, index) => (
+                  <tr key={index} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                    <td style={{ padding: '12px 0' }}>
+                      <span style={{ color: index === 0 ? primaryColor : '#fff', fontWeight: 'bold' }}>{index + 1}</span>
+                    </td>
+                    <td style={{ padding: '12px 0', color: '#d4d4d8' }}>{f.name}</td>
+                    <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 'bold' }}>{f.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* BOTTOM SECTION: Highlights & Milestones */}
+      <div style={{
+        background: '#111116',
+        padding: '30px 50px',
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        zIndex: 2,
+        marginTop: 'auto'
+      }}>
+        
+        {hasHighlights ? (
+          <div>
+            <h4 style={{ color: '#fff', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>
+              🎬 Athlete Highlights
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+              {data.highlights.map((url, i) => {
+                const ytId = getYoutubeId(url);
+                return (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <div style={{ background: '#18181b', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', transition: 'transform 0.2s', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.transform='translateY(-5px)'} onMouseLeave={e => e.currentTarget.style.transform='translateY(0)'}>
+                      {ytId ? (
+                        <img src={`https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`} alt="Highlight" style={{ width: '100%', height: '160px', objectFit: 'cover' }} onError={(e) => { e.target.src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`; }} />
+                      ) : (
+                        <div style={{ width: '100%', height: '160px', background: 'linear-gradient(45deg, #18181b, #27272a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: '2rem' }}>▶️</span>
+                        </div>
+                      )}
+                      <div style={{ padding: '15px' }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#fff', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Highlight Video {i+1}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#71717a', textTransform: 'uppercase' }}>
+                          Assistir Completo →
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+            {data.milestones.map((mil, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '15px', background: '#18181b', padding: '15px 25px', borderRadius: '8px', flex: '1 1 200px' }}>
+                <div style={{ fontSize: '2rem', fontWeight: '900', color: primaryColor }}>
+                  {mil.value}
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#fff' }}>{mil.name}</div>
+                  <div style={{ fontSize: '0.65rem', color: '#71717a', textTransform: 'uppercase' }}>Career Milestone</div>
+                </div>
               </div>
             ))}
           </div>
-        </div>
+        )}
 
-      </section>
-
-      {/* Bottom Career Milestones Box */}
-      <section style={{
-        background: '#18181b',
-        border: '1.5px solid #d97706', // Gold/Orange border
-        boxShadow: '0 0 15px rgba(217, 119, 6, 0.1)',
-        borderRadius: '8px',
-        padding: '20px',
-        position: 'relative'
-      }}>
-        <h4 style={{
-          margin: '0 0 15px 0',
-          fontSize: '0.8rem',
-          color: '#f97316',
-          textTransform: 'uppercase',
-          letterSpacing: '1.5px',
-          fontWeight: 'bold'
-        }}>
-          🏆 CAREER MILESTONES (MARCOS DA CARREIRA)
-        </h4>
-        
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
-          gap: '15px',
-          textAlign: 'center'
-        }}>
-          {data.milestones.map((mil, index) => (
-            <div key={index} style={{
-              background: '#09090b',
-              padding: '10px',
-              borderRadius: '4px',
-              border: '1px solid rgba(255,255,255,0.03)'
-            }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#f97316', marginBottom: '4px' }}>
-                {mil.value}
-              </div>
-              <div style={{ fontSize: '0.7rem', color: '#a1a1aa', textTransform: 'capitalize' }}>
-                {mil.name}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      </div>
 
     </div>
   );

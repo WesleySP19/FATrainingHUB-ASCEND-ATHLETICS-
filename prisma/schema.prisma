@@ -51,6 +51,7 @@ model Athlete {
   profilePhoto    String?      // Link ou base64 da foto do perfil
   cardBorder      String?      // Estilo de borda cosmética (GOLD, HOLO, OBSIDIAN, EMERALD)
   isMVP           Boolean      @default(false) // Flag de MVP do time
+  highlights      String?      // Array JSON de links/URLs de highlights
   
   // Custom High-Performance Metrics & Attributes
   height          String?      @default("6'2\"")
@@ -80,8 +81,12 @@ model Exercise {
   name        String
   type        String   // Ex: Força, Velocidade, Mobilidade
   location    String   // GYM ou HOME
-  mediaUrl    String?  // Imagem/GIF demonstrativa do movimento
+  mediaUrl    String?  // (Descontinuado/Legado)
   description String?  // Explicação passo a passo do exercício
+  mechanics   String?  // Explicação técnica detalhada
+  imageUrl    String?  // URL da imagem 📸
+  gifUrl      String?  // URL do GIF animado 🏃‍♂️
+  videoUrl    String?  // URL do vídeo longo/YouTube 🎥
 }
 
 model Workout {
@@ -112,6 +117,8 @@ model WorkoutSet {
   actualLoad  Float?   
   isCompleted Boolean  @default(false)
   dayOfWeek   String   @default("monday") // monday, tuesday, wednesday, thursday, friday, saturday, sunday
+
+  @@index([workoutId])
 }
 
 model PRRecord {
@@ -122,13 +129,19 @@ model PRRecord {
   exerciseName String
   maxLoad     Float
   dateAchieved DateTime @default(now())
+
+  @@index([athleteId])
+  @@index([exerciseId])
 }
 
 model Play {
   id        String           @id @default(cuid())
   name      String
-  sport     String           @default("Futebol Americano")
-  fieldSize String           @default("600,400")
+  sport       String           @default("Futebol Americano")
+  execution   String           @default("Ataque") // Ataque, Defesa, Special Teams
+  position    String?          // Ex: "WR", "QB", "OL", "Defesa"
+  description String?          // Explicação/Comentários da rota
+  fieldSize   String           @default("600,400")
   dataJSON  String
   coachId   String
   coach     Coach            @relation(fields: [coachId], references: [id])

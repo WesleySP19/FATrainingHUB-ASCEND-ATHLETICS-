@@ -1,48 +1,36 @@
 "use client";
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import PlaybookCanvas from '@/components/PlaybookCanvas';
+import AthleteNavbar from '@/components/athlete/AthleteNavbar';
 
-export default function AthletePlaybookPage({ params }) {
-  const resolvedParams = use(params);
-  const athleteId = resolvedParams.id;
+export default function AthletePlaybookPage() {
+  const params = useParams();
+  const id = params.id;
 
-  const [athlete, setAthlete] = useState(null);
-  const [assignedPlays, setAssignedPlays] = useState([]);
-  const [selectedPlay, setSelectedPlay] = useState(null);
+  const [plays, setPlays] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPlay, setSelectedPlay] = useState(null);
+  const [playDataJSON, setPlayDataJSON] = useState({ players: [] });
 
-  // Feedback form states
-  const [feedbackStatus, setFeedbackStatus] = useState(''); // 'UNDERSTOOD' ou 'DOUBT'
-  const [feedbackComment, setFeedbackComment] = useState('');
-  const [submittingFeedback, setSubmittingFeedback] = useState(false);
-
-  // Alert system
-  const [alertMsg, setAlertMsg] = useState({ type: '', text: '' });
+  // Feedback states
+  const [doubtText, setDoubtText] = useState('');
+  const [showDoubtBox, setShowDoubtBox] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // 1. Verificar atleta autenticado
-    const stored = localStorage.getItem('athlete');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (parsed.id === athleteId) {
-        setAthlete(parsed);
-      }
-    }
-    loadAssignedPlays();
-  }, [athleteId]);
+    if (id) loadAssignedPlays();
+  }, [id]);
 
   const loadAssignedPlays = async () => {
+    setLoading(true);
     try {
-      const res = await fetch(`/api/athlete/${athleteId}/plays`);
+      const res = await fetch(`/api/athlete/${id}/plays`);
       const data = await res.json();
       if (data.success) {
-        setAssignedPlays(data.plays);
-        if (data.plays.length > 0) {
-          // Seleciona a primeira por padrão
-          handleSelectPlay(data.plays[0]);
-        }
+        setPlays(data.plays);
       }
     } catch (e) {
       console.error(e);
@@ -52,252 +40,244 @@ export default function AthletePlaybookPage({ params }) {
 
   const handleSelectPlay = (play) => {
     setSelectedPlay(play);
-    if (play.feedback) {
-      setFeedbackStatus(play.feedback.status);
-      setFeedbackComment(play.feedback.comment || '');
-    } else {
-      setFeedbackStatus('');
-      setFeedbackComment('');
+    setShowDoubtBox(false);
+    setDoubtText('');
+    try {
+      const parsed = typeof play.dataJSON === 'string' ? JSON.parse(play.dataJSON) : play.dataJSON;
+      setPlayDataJSON(parsed);
+    } catch (e) {
+      setPlayDataJSON({ players: [] });
     }
   };
 
-  const showAlert = (type, text) => {
-    setAlertMsg({ type, text });
-    setTimeout(() => setAlertMsg({ type: '', text: '' }), 5000);
-  };
+  const submitFeedback = async (status) => {
+    if (status === 'DOUBT' && !doubtText.trim()) {
+      alert("Por favor, descreva sua dúvida para que o coach possa te ajudar.");
+      return;
+    }
 
-  // Envia feedback de compreensão
-  const handleSubmitFeedback = async (status) => {
-    setSubmittingFeedback(true);
+    setSubmitting(true);
     try {
-      const res = await fetch(`/api/athlete/${athleteId}/plays`, {
+      const res = await fetch(`/api/athlete/${id}/plays`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           playId: selectedPlay.id,
           status,
-          comment: feedbackComment
+          comment: status === 'DOUBT' ? doubtText : null
         })
       });
       const data = await res.json();
       if (data.success) {
-        showAlert('success', 'Seu feedback tático foi registrado com sucesso!');
-        setFeedbackStatus(status);
-        // Atualiza a lista local de jogadas para salvar o feedback
-        setAssignedPlays(prev => prev.map(p => {
+        // Update local state
+        setPlays(prev => prev.map(p => {
           if (p.id === selectedPlay.id) {
-            return {
-              ...p,
-              feedback: {
-                status,
-                comment: feedbackComment,
-                updatedAt: new Date().toISOString()
-              }
-            };
+            return { ...p, feedback: data.feedback };
           }
           return p;
         }));
+        setSelectedPlay({ ...selectedPlay, feedback: data.feedback });
+        if (status === 'DOUBT') setShowDoubtBox(false);
       } else {
-        showAlert('error', data.error || 'Erro ao registrar feedback.');
+        alert(data.error || "Erro ao enviar feedback.");
       }
     } catch (e) {
-      showAlert('error', 'Erro de conexão ao enviar feedback.');
+      alert("Erro de conexão.");
     }
-    setSubmittingFeedback(false);
+    setSubmitting(false);
   };
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '100px', color: '#fff', fontSize: '1.2rem' }}>Carregando Playbook...</div>;
+  if (loading) return <div style={{ textAlign: 'center', padding: '100px', color: '#fff', fontSize: '1.2rem' }}>Carregando Sala Tática...</div>;
 
   return (
-    <div className="container" style={{ paddingBottom: '50px' }}>
+    <>
+      <AthleteNavbar athleteId={id} />
+      <div className="container" style={{ paddingBottom: '50px' }}>
       
-      {/* Header */}
+      {/* Navigation */}
       <nav style={{ padding: 'var(--spacing-md) 0', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
         <div>
-          <h2 style={{ color: 'var(--primary-color)', margin: 0 }}>ESTUDO TÁTICO DE PLAYBOOK</h2>
+          <h2 style={{ color: '#06b6d4', margin: 0 }}>SALA TÁTICA</h2>
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            estude suas rotas em tempo real • destaque amarelo na sua camisa
+            Estude as jogadas da semana
           </span>
         </div>
-        <Link href={`/athlete/${athleteId}`} style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 'bold' }}>&larr; Voltar pro Locker Room</Link>
       </nav>
 
-      {alertMsg.text && (
-        <div style={{
-          padding: '12px 15px',
-          borderRadius: '4px',
-          marginBottom: '20px',
-          background: alertMsg.type === 'success' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-          border: `1px solid ${alertMsg.type === 'success' ? '#22c55e' : '#ef4444'}`,
-          color: alertMsg.type === 'success' ? '#86efac' : '#fca5a5',
-          fontWeight: 'bold',
-          fontSize: '0.9rem'
-        }}>
-          {alertMsg.text}
-        </div>
-      )}
-
-      {/* Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '25px' }} id="athlete-playbook-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '25px' }}>
         
-        {/* Left Sidebar: Plays list */}
-        <section className="card-panel" style={{ border: '1px solid #1e293b', height: 'fit-content' }}>
-          <h3 style={{ marginBottom: '15px', color: 'var(--primary-color)' }}>Jogadas Atribuídas</h3>
+        {/* Left Column: List of assigned plays */}
+        <section className="card-panel" style={{ border: '1px solid rgba(6, 182, 212, 0.2)' }}>
+          <h3 style={{ marginBottom: '15px', color: '#06b6d4' }}>Meu Playbook</h3>
+          
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {assignedPlays.map(play => (
-              <div
-                key={play.id}
-                onClick={() => handleSelectPlay(play)}
-                style={{
-                  padding: '12px',
-                  borderRadius: '6px',
-                  background: selectedPlay?.id === play.id ? 'rgba(6, 182, 212, 0.15)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${selectedPlay?.id === play.id ? 'var(--primary-color)' : 'rgba(255,255,255,0.05)'}`,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <div>
-                  <strong style={{ color: '#fff', fontSize: '0.9rem', display: 'block' }}>{play.name}</strong>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                    Por Coach: {play.coach?.name || 'Oficial'}
-                  </span>
+            {plays.map(play => {
+              const isSelected = selectedPlay?.id === play.id;
+              const feedbackStatus = play.feedback?.status;
+              
+              return (
+                <div 
+                  key={play.id}
+                  onClick={() => handleSelectPlay(play)}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    background: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${isSelected ? '#06b6d4' : 'rgba(255,255,255,0.05)'}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '5px'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <strong style={{ color: '#fff', fontSize: '0.9rem' }}>{play.name}</strong>
+                    {feedbackStatus === 'UNDERSTOOD' && <span style={{ color: '#22c55e', fontSize: '1rem' }} title="Compreendido">✅</span>}
+                    {feedbackStatus === 'DOUBT' && <span style={{ color: '#ef4444', fontSize: '1rem' }} title="Dúvida Registrada">❓</span>}
+                    {!feedbackStatus && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#06b6d4', marginTop: '5px' }} title="Novo"></span>}
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#a1a1aa' }}>{play.sport}</span>
+                    {play.position && play.position !== 'ALL' && (
+                      <span style={{ fontSize: '0.7rem', color: '#facc15', fontWeight: 'bold' }}>• Foco: {play.position}</span>
+                    )}
+                  </div>
                 </div>
-                {play.feedback && (
-                  <span style={{
-                    fontSize: '0.65rem',
-                    padding: '3px 6px',
-                    borderRadius: '10px',
-                    background: play.feedback.status === 'UNDERSTOOD' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-                    color: play.feedback.status === 'UNDERSTOOD' ? '#22c55e' : '#ef4444',
-                    border: `1px solid ${play.feedback.status === 'UNDERSTOOD' ? '#22c55e' : '#ef4444'}`,
-                    fontWeight: 'bold'
-                  }}>
-                    {play.feedback.status === 'UNDERSTOOD' ? 'Entendi' : 'Dúvida'}
-                  </span>
-                )}
-              </div>
-            ))}
-            {assignedPlays.length === 0 && (
+              );
+            })}
+            
+            {plays.length === 0 && (
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', textAlign: 'center', padding: '20px' }}>
-                Nenhuma jogada tática atribuída a você no momento.
+                Nenhuma jogada atribuída a você no momento.
               </span>
             )}
           </div>
         </section>
 
-        {/* Right Section: Canvas animation & Feedback forms */}
-        {selectedPlay ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
-            {/* Visualizer Canvas Card */}
-            <section className="card-panel" style={{ border: '1px solid #1e293b' }}>
-              <h3 style={{ marginBottom: '5px', color: '#fff' }}>{selectedPlay.name}</h3>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'block', marginBottom: '15px' }}>
-                Modalidade: {selectedPlay.sport} | Criada em: {new Date(selectedPlay.assignedAt).toLocaleDateString()}
-              </span>
-
-              {/* Playbook Canvas with readOnly={true} */}
-              <PlaybookCanvas
-                playData={selectedPlay}
-                highlightAthleteId={athleteId}
-                readOnly={true}
-              />
-            </section>
-
-            {/* Study Feedback panel */}
-            <section className="card-panel" style={{ border: '1px solid #1e293b' }}>
-              <h4 style={{ margin: '0 0 10px 0', fontSize: '0.95rem', color: 'var(--primary-color)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Registro de Compreensão Tática
-              </h4>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '15px' }}>
-                Após analisar a simulação da rota e os deslocamentos, registre seu status de entendimento para reportar ao Coach:
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+        {/* Right Column: Canvas & Feedback */}
+        <section className="card-panel" style={{ border: '1px solid #1e293b' }}>
+          {selectedPlay ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* Play Header info */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    Notas/Dúvidas para o Treinador (Opcional)
-                  </label>
-                  <textarea
-                    rows="3"
-                    placeholder="Descreva se tem dúvidas em algum corte ou ponto de delay da rota..."
-                    value={feedbackComment}
-                    onChange={e => setFeedbackComment(e.target.value)}
-                    style={{ width: '100%', padding: '10px', background: '#000', color: '#fff', border: '1px solid #334155', borderRadius: '4px', resize: 'vertical' }}
-                  />
+                  <h3 style={{ margin: 0, color: '#fff', fontSize: '1.5rem' }}>{selectedPlay.name}</h3>
+                  <p style={{ margin: '5px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    Por Coach: {selectedPlay.coach?.name}
+                  </p>
                 </div>
-
-                <div style={{ display: 'flex', gap: '15px', marginTop: '5px' }}>
-                  <button
-                    disabled={submittingFeedback}
-                    onClick={() => handleSubmitFeedback('UNDERSTOOD')}
-                    className="btn"
-                    style={{
-                      flexGrow: 1,
-                      padding: '12px',
-                      background: feedbackStatus === 'UNDERSTOOD' ? '#22c55e' : 'rgba(34, 197, 94, 0.1)',
-                      color: feedbackStatus === 'UNDERSTOOD' ? '#000' : '#22c55e',
-                      borderColor: '#22c55e',
-                      fontWeight: 'bold',
-                      fontSize: '0.9rem'
-                    }}
-                  >
-                    ENTENDI A JOGADA 🟢
-                  </button>
-
-                  <button
-                    disabled={submittingFeedback}
-                    onClick={() => handleSubmitFeedback('DOUBT')}
-                    className="btn"
-                    style={{
-                      flexGrow: 1,
-                      padding: '12px',
-                      background: feedbackStatus === 'DOUBT' ? '#ef4444' : 'rgba(239, 68, 68, 0.1)',
-                      color: feedbackStatus === 'DOUBT' ? '#000' : '#ef4444',
-                      borderColor: '#ef4444',
-                      fontWeight: 'bold',
-                      fontSize: '0.9rem'
-                    }}
-                  >
-                    TENHO DÚVIDAS NESTA ROTA 🔴
-                  </button>
-                </div>
-
-                {feedbackStatus && (
-                  <div style={{
-                    marginTop: '10px',
-                    textAlign: 'center',
-                    fontSize: '0.8rem',
-                    color: 'var(--text-secondary)'
-                  }}>
-                    Status atual: <strong style={{ color: feedbackStatus === 'UNDERSTOOD' ? '#22c55e' : '#ef4444' }}>
-                      {feedbackStatus === 'UNDERSTOOD' ? 'COMPREENDIDO' : 'COM DÚVIDAS'}
-                    </strong>
+                {selectedPlay.position && selectedPlay.position !== 'ALL' && (
+                  <div style={{ background: 'rgba(250, 204, 21, 0.1)', border: '1px solid rgba(250, 204, 21, 0.3)', padding: '5px 12px', borderRadius: '20px', color: '#facc15', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                    POSIÇÃO FOCO: {selectedPlay.position}
                   </div>
                 )}
               </div>
-            </section>
 
-          </div>
-        ) : (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '300px',
-            border: '1px dashed rgba(255,255,255,0.1)',
-            borderRadius: '8px',
-            color: 'var(--text-secondary)'
-          }}>
-            Nenhuma jogada tática disponível para visualização.
-          </div>
-        )}
+              {selectedPlay.description && (
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderLeft: '3px solid #06b6d4', padding: '15px', borderRadius: '4px' }}>
+                  <strong style={{ display: 'block', fontSize: '0.75rem', color: '#06b6d4', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5px' }}>Comentários do Treinador:</strong>
+                  <p style={{ margin: 0, color: '#e2e8f0', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                    {selectedPlay.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Viewer */}
+              <div style={{ pointerEvents: 'none' }}> {/* Ensures no accidental edits on client side, though readOnly prop also handles it */}
+                <PlaybookCanvas 
+                  playData={{ ...selectedPlay, dataJSON: playDataJSON }}
+                  onChange={() => {}}
+                  readOnly={true}
+                />
+              </div>
+
+              {/* Feedback System */}
+              <div style={{ marginTop: '10px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <h4 style={{ marginBottom: '15px', color: '#fff' }}>Confirmação de Entendimento</h4>
+                
+                {!showDoubtBox ? (
+                  <div style={{ display: 'flex', gap: '15px' }}>
+                    <button 
+                      onClick={() => submitFeedback('UNDERSTOOD')}
+                      disabled={submitting}
+                      style={{
+                        flex: 1,
+                        padding: '15px',
+                        borderRadius: '8px',
+                        background: selectedPlay.feedback?.status === 'UNDERSTOOD' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.1)',
+                        border: `1px solid ${selectedPlay.feedback?.status === 'UNDERSTOOD' ? '#22c55e' : 'rgba(34, 197, 94, 0.3)'}`,
+                        color: '#22c55e',
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: selectedPlay.feedback?.status === 'UNDERSTOOD' ? '0 0 15px rgba(34,197,94,0.3)' : 'none'
+                      }}
+                    >
+                      {selectedPlay.feedback?.status === 'UNDERSTOOD' ? '✅ COMPREENDIDO' : '✅ COMPREENDI A JOGADA'}
+                    </button>
+                    
+                    <button 
+                      onClick={() => setShowDoubtBox(true)}
+                      style={{
+                        flex: 1,
+                        padding: '15px',
+                        borderRadius: '8px',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        color: '#ef4444',
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      ❓ TENHO DÚVIDA
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', background: 'rgba(239, 68, 68, 0.05)', padding: '20px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                    <label style={{ color: '#fca5a5', fontSize: '0.9rem', fontWeight: 'bold' }}>Descreva qual foi sua dúvida na execução:</label>
+                    <textarea 
+                      rows="3"
+                      placeholder="Ex: Não entendi se o corte no Y é antes ou depois do bloqueio..."
+                      value={doubtText}
+                      onChange={e => setDoubtText(e.target.value)}
+                      style={{ width: '100%', padding: '12px', background: '#000', color: '#fff', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '4px', resize: 'none' }}
+                    />
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button 
+                        onClick={() => submitFeedback('DOUBT')}
+                        disabled={submitting}
+                        style={{ flex: 1, padding: '12px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        ENVIAR DÚVIDA AO TREINADOR
+                      </button>
+                      <button 
+                        onClick={() => setShowDoubtBox(false)}
+                        style={{ padding: '12px 20px', background: 'transparent', color: '#a1a1aa', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', cursor: 'pointer' }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '400px', color: 'var(--text-secondary)' }}>
+              <span style={{ fontSize: '4rem', marginBottom: '20px', opacity: 0.2 }}>📋</span>
+              <p>Selecione uma jogada no menu lateral para iniciar o estudo tático.</p>
+            </div>
+          )}
+        </section>
 
       </div>
-
     </div>
+    </>
   );
 }

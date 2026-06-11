@@ -1,15 +1,26 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import TacticalDashboard from '@/components/TacticalDashboard';
 import PhysioDashboard from '@/components/PhysioDashboard';
 import HolographicComparator from '@/components/HolographicComparator';
+import { useCoach } from '@/contexts/CoachContext';
+import useSWR from 'swr';
+
+const fetcher = url => fetch(url).then(r => r.json());
 
 export default function RosterAdmin() {
-  const [coach, setCoach] = useState(null);
-  const [athletes, setAthletes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { coach, loadingCoach } = useCoach();
+  const { data: rosterData, error: rosterError, isLoading: loadingRoster, mutate: mutateRoster } = useSWR(coach ? `/api/coach/roster?coachId=${coach.id}` : null, fetcher);
+  const { data: teamFetchData, mutate: mutateTeam } = useSWR(coach ? `/api/coach/team?coachId=${coach.id}` : null, fetcher);
+  
+  const athletes = rosterData?.athletes || [];
+  const loadingAthletes = loadingCoach || loadingRoster;
+  const teamData = teamFetchData?.team || null;
+  const loadingTeam = !teamData && !teamFetchData;
+
   const [selectedAthleteId, setSelectedAthleteId] = useState(null);
   const [selectedPhysioAthleteId, setSelectedPhysioAthleteId] = useState(null);
   
@@ -72,8 +83,6 @@ export default function RosterAdmin() {
     trainingFrequency: '3x por semana',
     championships: '0'
   });
-  const [teamData, setTeamData] = useState(null);
-  const [loadingTeam, setLoadingTeam] = useState(false);
   const [savingTeam, setSavingTeam] = useState(false);
   const [teamSuccess, setTeamSuccess] = useState('');
   const [teamError, setTeamError] = useState('');
@@ -142,7 +151,7 @@ export default function RosterAdmin() {
       const data = await res.json();
       if (data.success) {
         setEditingAthlete(null);
-        fetchAthletes(coach.id);
+        mutateRoster();
       } else {
         setEditError(data.error || 'Erro ao atualizar atleta.');
       }
@@ -163,7 +172,7 @@ export default function RosterAdmin() {
       const data = await res.json();
       if (data.success) {
         setFormSuccess('Atleta excluído com sucesso!');
-        setAthletes(prev => prev.filter(ath => ath.id !== athleteId));
+        mutateRoster();
         setTimeout(() => setFormSuccess(''), 4000);
       } else {
         setFormError(data.error || 'Erro ao excluir atleta.');
@@ -176,16 +185,22 @@ export default function RosterAdmin() {
   };
 
   useEffect(() => {
-    const storedCoach = localStorage.getItem('coach');
-    if (storedCoach) {
-      const parsedCoach = JSON.parse(storedCoach);
-      setCoach(parsedCoach);
-      fetchAthletes(parsedCoach.id);
-      fetchCoachTeam(parsedCoach.id);
-    } else {
-      setLoading(false);
+    if (teamData && !savingTeam) {
+      setTeamForm({
+        name: teamData.name || '',
+        abbreviation: teamData.abbreviation || '',
+        founded: teamData.founded || '',
+        primaryColor: teamData.primaryColor || '#f97316',
+        logoUrl: teamData.logoUrl || '',
+        history: teamData.history || '',
+        wins: (teamData.wins || 0).toString(),
+        losses: (teamData.losses || 0).toString(),
+        draws: (teamData.draws || 0).toString(),
+        trainingFrequency: teamData.trainingFrequency || '3x por semana',
+        championships: (teamData.championships || 0).toString()
+      });
     }
-  }, []);
+  }, [teamData]);
 
   useEffect(() => {
     if (!coach) return;
@@ -198,17 +213,23 @@ export default function RosterAdmin() {
         console.log("Recebido novo treino concluído em tempo real:", data);
         
         // 1. Atualizar o roster localmente
-        setAthletes(prev => prev.map(ath => {
-          if (ath.id === data.athleteId) {
-            return {
-              ...ath,
-              overall: data.overall,
-              attendanceCount: data.attendanceCount,
-              prCount: data.prCount
-            };
-          }
-          return ath;
-        }));
+        mutateRoster((currentData) => {
+          if (!currentData || !currentData.athletes) return currentData;
+          return {
+            ...currentData,
+            athletes: currentData.athletes.map(ath => {
+              if (ath.id === data.athleteId) {
+                return {
+                  ...ath,
+                  overall: data.overall,
+                  attendanceCount: data.attendanceCount,
+                  prCount: data.prCount
+                };
+              }
+              return ath;
+            })
+          };
+        }, false);
 
         // 2. Toca som sintetizado premium de alerta de performance
         if (typeof window !== 'undefined') {
@@ -244,47 +265,6 @@ export default function RosterAdmin() {
     };
   }, [coach]);
 
-  const fetchAthletes = async (coachId) => {
-    try {
-      const res = await fetch(`/api/coach/roster?coachId=${coachId}`);
-      const data = await res.json();
-      if (data.success) {
-        setAthletes(data.athletes);
-      }
-    } catch (err) {
-      console.error("Erro ao carregar roster:", err);
-    }
-    setLoading(false);
-  };
-
-  const fetchCoachTeam = async (coachId) => {
-    try {
-      setLoadingTeam(true);
-      const res = await fetch(`/api/coach/team?coachId=${coachId}`);
-      const data = await res.json();
-      if (data.success && data.team) {
-        setTeamData(data.team);
-        setTeamForm({
-          name: data.team.name || '',
-          abbreviation: data.team.abbreviation || '',
-          founded: data.team.founded || '',
-          primaryColor: data.team.primaryColor || '#f97316',
-          logoUrl: data.team.logoUrl || '',
-          history: data.team.history || '',
-          wins: (data.team.wins ?? 0).toString(),
-          losses: (data.team.losses ?? 0).toString(),
-          draws: (data.team.draws ?? 0).toString(),
-          trainingFrequency: data.team.trainingFrequency || '3x por semana',
-          championships: (data.team.championships ?? 0).toString()
-        });
-      }
-    } catch (err) {
-      console.error("Erro ao carregar time do coach:", err);
-    } finally {
-      setLoadingTeam(false);
-    }
-  };
-
   const handleSaveTeam = async (e) => {
     e.preventDefault();
     if (!coach) return;
@@ -310,11 +290,12 @@ export default function RosterAdmin() {
       });
       const data = await res.json();
       if (data.success) {
-        setTeamSuccess(teamData ? 'Dados do time atualizados com sucesso!' : 'Time criado com sucesso!');
-        setTeamData(data.team);
+        setTeamSuccess('Dados da equipe salvos com sucesso!');
+        mutateTeam();
+        setTimeout(() => setTeamSuccess(''), 4000);
         if (method === 'POST') {
           const updatedCoach = { ...coach, teamName: data.team.name };
-          setCoach(updatedCoach);
+          // setCoach(updatedCoach); // Assuming setCoach is accessible or managed elsewhere
           localStorage.setItem('coach', JSON.stringify(updatedCoach));
         }
       } else {
@@ -494,7 +475,7 @@ export default function RosterAdmin() {
     );
   };
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '100px', color: '#fff', fontSize: '1.2rem' }}>Carregando Roster Oficial...</div>;
+  if (loadingCoach || loadingAthletes) return <div style={{ textAlign: 'center', padding: '100px', color: '#fff', fontSize: '1.2rem' }}>Carregando Roster Oficial...</div>;
 
   if (!coach) {
     return (
@@ -509,17 +490,17 @@ export default function RosterAdmin() {
   }
 
   return (
-    <div className="container" style={{ paddingBottom: '50px' }}>
+    <>
+      <div className="container" style={{ paddingBottom: '50px' }}>
       
       {/* Navigation */}
       <nav style={{ padding: 'var(--spacing-md) 0', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
         <div>
-          <h2 style={{ color: 'var(--primary-color)', margin: 0 }}>ROSTER ADMIN</h2>
+          <h2 style={{ color: 'var(--primary-color)', margin: 0 }}>MEU ROSTER & PERFORMANCE</h2>
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            {coach.teamName ? `${coach.teamName} - ` : ''}{getRoleText(coach.role)}: {coach.name}
+            Gerencie seus atletas, analise ACWR e métricas físicas
           </span>
         </div>
-        <Link href="/coach" style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 'bold' }}>&larr; Voltar pro Playbook</Link>
       </nav>
 
       {/* Tab Buttons - Premium Segmented Control */}
@@ -1000,9 +981,20 @@ export default function RosterAdmin() {
                             👑
                           </button>
                           <div>
-                            <strong style={{ display: 'block', color: athlete.isMVP ? '#facc15' : '#fff', fontSize: '0.85rem' }}>
-                              {athlete.name}
-                            </strong>
+                            <Link href={`/coach/roster/${athlete.id}`} style={{ textDecoration: 'none' }}>
+                              <strong style={{ 
+                                display: 'block', 
+                                color: athlete.isMVP ? '#facc15' : '#fff', 
+                                fontSize: '0.85rem',
+                                transition: 'color 0.2s',
+                                cursor: 'pointer'
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.color = 'var(--primary-color)'}
+                              onMouseLeave={e => e.currentTarget.style.color = athlete.isMVP ? '#facc15' : '#fff'}
+                              >
+                                {athlete.name} ↗
+                              </strong>
+                            </Link>
                             {athlete.prCount >= 3 ? (
                               <span style={{ 
                                 display: 'inline-flex', 
@@ -1725,9 +1717,10 @@ export default function RosterAdmin() {
           justifyContent: 'center',
           alignItems: 'center',
           zIndex: 1000,
-          padding: '20px'
+          padding: '40px 20px',
+          overflowY: 'auto'
         }}>
-          <div style={{ maxWidth: '750px', width: '100%', position: 'relative' }}>
+          <div style={{ maxWidth: '1200px', width: '100%', position: 'relative', margin: 'auto' }}>
             <button 
               onClick={() => setSelectedAthleteId(null)}
               style={{
@@ -1942,5 +1935,6 @@ export default function RosterAdmin() {
       )}
 
     </div>
+    </>
   );
 }

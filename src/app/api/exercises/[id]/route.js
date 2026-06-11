@@ -1,20 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request, { params }) {
+export async function DELETE(request, { params }) {
   try {
     const resolvedParams = await params;
-    const id = resolvedParams.id;
-    
-    const exercise = await prisma.exercise.findUnique({
-      where: { id }
-    });
-    
-    if (!exercise) {
-      return NextResponse.json({ success: false, error: 'Exercício não encontrado.' }, { status: 404 });
+    const exerciseId = resolvedParams.id;
+
+    if (!exerciseId) {
+      return NextResponse.json({ success: false, error: 'O ID do exercício é obrigatório.' }, { status: 400 });
     }
-    
-    return NextResponse.json({ success: true, exercise });
+
+    // Deleta o exercício. Nota: Se o exercício já estiver sendo usado em um WorkoutSet, 
+    // dependerá das configurações de OnDelete (atualmente não estrito). 
+    // É recomendado garantir que não há WorkoutSets órfãos ou usar cascade.
+    await prisma.exercise.delete({
+      where: { id: exerciseId }
+    });
+
+    return NextResponse.json({ success: true, message: 'Exercício deletado com sucesso.' });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

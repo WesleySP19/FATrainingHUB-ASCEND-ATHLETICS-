@@ -1,26 +1,31 @@
 @echo off
-title FA Training Hub - Motor Full-Stack
-color 0A
+title Ascend Athletics - FA Training Hub
+color 0B
 
 echo =======================================================
-echo          FA TRAINING HUB - INICIANDO SISTEMA
+echo          ASCEND ATHLETICS - INICIANDO SISTEMA
 echo =======================================================
 echo.
 
-:: Força o uso do Node.js v22 (Garante compatibilidade do Prisma ORM no Windows)
-set PATH=%USERPROFILE%\node22\node-v22.14.0-win-x64;%PATH%
+:: Força o uso do Node.js v22 e binários locais
+set PATH=%USERPROFILE%\node22\node-v22.14.0-win-x64;%~dp0node_modules\.bin;%PATH%
 
-echo [1/3] Sincronizando Banco de Dados SQLite...
+echo [1/4] Preparando Ambiente e limpando processos antigos...
+taskkill /F /IM node.exe >nul 2>&1
+
+
+echo [2/4] Sincronizando Banco de Dados SQLite...
+call npx.cmd prisma generate >nul 2>&1
 call npx.cmd prisma db push >nul 2>&1
 
 echo.
-echo [2/3] Checando Motor de Gamificacao e Contas...
-echo [3/3] Ligando Servidor Next.js (porta 3000)...
+echo [3/4] Verificando Integridade do Codigo...
+echo [4/4] Ligando Servidor Next.js (Porta 3000)...
 echo.
 echo =======================================================
 echo  O SISTEMA ESTA ONLINE. NAO FECHE ESTA JANELA PRETA.
 echo =======================================================
 echo.
 
-:: Inicia o App Router
+:: Inicia o App Router limpo
 call npm.cmd run dev
